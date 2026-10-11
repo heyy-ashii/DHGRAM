@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
-import type { MessageThread, PeerMessage, PostList, Story, StoryGroup, User, UserDirectory } from './types'
+import type { GroupSummary, MessageThread, PeerMessage, PostList, Story, StoryGroup, User, UserDirectory } from './types'
 
 export const useStories = () =>
   useQuery({
@@ -52,4 +52,20 @@ export const useStudentDirectory = (q: string, enabled = true) =>
     queryKey: ['messages', 'directory', q],
     queryFn: () => api<UserDirectory>('/messages/directory', { query: { q, limit: 30 } }),
     enabled,
+  })
+
+export const useGroups = (enabled = true) =>
+  useQuery({
+    queryKey: ['groups', 'list'],
+    queryFn: () => api<{ data: { groups: GroupSummary[] } }>('/groups').then((r) => r.data.groups),
+    enabled,
+    refetchInterval: 10000,
+  })
+
+export const useGroup = (id?: string) =>
+  useQuery({
+    queryKey: ['groups', id],
+    queryFn: () => api<{ data: { group: GroupSummary; messages: PeerMessage[] } }>(`/groups/${id}`).then((r) => r.data),
+    enabled: Boolean(id),
+    refetchInterval: 5000,
   })

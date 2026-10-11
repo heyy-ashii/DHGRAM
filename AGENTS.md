@@ -3,9 +3,9 @@
 ## Project
 
 DHGRAM – "Share & Message". A chat + thought-sharing platform: a home page with
-24-hour Stories and a public Thoughts feed, one-to-one student Messages, profiles
-with avatars, and a Chat-with-Admin support thread that lives inside Messages.
-React (Vite)
+24-hour Stories and a public Thoughts feed, one-to-one and group student
+Messages, profiles with avatars, and a Chat-with-Admin support thread that lives
+inside Messages. React (Vite)
 frontend + Express API. Frontend in `src/`, API in `server/`, Vercel serverless
 entry in `api/index.js`.
 
@@ -71,6 +71,22 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
 - The `/messages` sidebar lists **all other active students** (from
   `/messages/directory`) on top of existing conversations; picking someone with
   no thread calls `/messages/start` and opens it.
+
+## Group chats (multi-user)
+
+- `server/routes/groups.js` + `server/models/GroupChat.js` back multi-user group
+  messaging. A group is `app_groups` with a `members` array of user ids; messages
+  live in `app_group_messages`. All routes require auth.
+- `GET /groups` lists the caller's groups (last message + member preview),
+  `POST /groups` creates one, `GET/POST /groups/:id/messages` read/send.
+- Membership is checked with `memberIds`/`idOf` helpers so Mongo ObjectIds and
+  Sheets/Supabase UUID strings compare consistently (`String(a) === String(b)`).
+- The UI is `src/components/GroupChat.tsx`, wired into `Messages.tsx` as a
+  "Groups" section in the sidebar plus a right-pane thread and a New-group modal.
+  Uses `useGroups`/group queries from `src/lib/queries.ts`.
+- Storage parity: `supabase/migrations/0005_groups.sql` defines the tables,
+  `server/supabase/models.js` adds `app_groups` + member models, and
+  `server/sheets/odm.js` handles array columns (e.g. `members`).
 
 ## Chat with Admin (support)
 

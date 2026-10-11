@@ -7,6 +7,7 @@ import { errorHandler, notFound } from './middleware/error.js';
 import { apiLimiter } from './middleware/rateLimit.js';
 import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
+import groupRoutes from './routes/groups.js';
 import messageRoutes from './routes/messages.js';
 import postRoutes from './routes/posts.js';
 import storyRoutes from './routes/stories.js';
@@ -66,6 +67,7 @@ export function createApp({ connect = connectDB } = {}) {
   app.use('/api/v1/posts', postRoutes);
   app.use('/api/v1/stories', storyRoutes);
   app.use('/api/v1/messages', messageRoutes);
+  app.use('/api/v1/groups', groupRoutes);
   app.use('/api/v1/chat', chatRoutes);
 
   app.use(notFound);

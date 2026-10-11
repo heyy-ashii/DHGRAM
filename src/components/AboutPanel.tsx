@@ -10,20 +10,19 @@ const credits = [{ name: CREATOR_NAME, role: 'Founder · Design & Full-stack Dev
 
 const steps = [
   { icon: MessageSquare, title: 'Share thoughts', text: 'Any signed-in student can post a thought to the public feed.' },
-  { icon: Users, title: 'Chat with anyone', text: 'Open Messages to find every student and start a conversation.' },
+  { icon: Users, title: 'Chat with anyone', text: 'Message another student one-to-one, or start a group with several.' },
   { icon: Timer, title: 'Stays fresh', text: 'Messages clear automatically after 30 days, so nothing piles up.' },
 ]
 
-// Shared About content: rendered on the /about page and in the profile's three-dot panel.
-export default function AboutPanel() {
-  const { user, logout } = useAuth()
-  const { toast } = useUi()
-
+// The About content. Rendered on the public /about page and in the profile's
+// three-dot panel. The profile passes `auth` so its panel can offer log in/out;
+// the public page leaves it off and shows the explanation on its own.
+export default function AboutPanel({ auth = false }: { auth?: boolean }) {
   return (
     <div className="space-y-8">
       <section>
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          <BrandName /> is a simple space for students to share thoughts and message each other, one-to-one.
+          <BrandName /> is a simple space for students to share thoughts and message each other — one-to-one or in groups.
         </p>
       </section>
 
@@ -59,30 +58,40 @@ export default function AboutPanel() {
         </div>
       </section>
 
-      <section className="border-t border-neutral-200 pt-6 dark:border-neutral-800">
-        {user ? (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm text-neutral-500">Signed in as</p>
-              <p className="font-semibold">{user.name} <span className="text-sm font-normal text-neutral-500">@{user.username}</span></p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Link to="/account" className="btn-outline">My account</Link>
-              <button
-                className="btn-ghost"
-                onClick={async () => {
-                  await logout()
-                  toast('Logged out')
-                }}
-              >
-                <LogOut className="size-4" /> Logout
-              </button>
-            </div>
-          </div>
-        ) : (
-          <AuthPanel />
-        )}
-      </section>
+      {auth && (
+        <section className="border-t border-neutral-200 pt-6 dark:border-neutral-800">
+          <AuthSection />
+        </section>
+      )}
+    </div>
+  )
+}
+
+function AuthSection() {
+  const { user, logout } = useAuth()
+  const { toast } = useUi()
+
+  if (!user)
+    return (
+      <div>
+        <h3 className="font-bold">Log in</h3>
+        <p className="mb-4 text-sm text-neutral-500">Log in to share thoughts and message other students.</p>
+        <AuthPanel />
+      </div>
+    )
+
+  return (
+    <div>
+      <h3 className="font-bold">Your account</h3>
+      <p className="mb-4 text-sm text-neutral-500">You are signed in as {user.name} (@{user.username}).</p>
+      <div className="flex flex-wrap gap-3">
+        <Link to={`/u/${user.username}`} className="btn-outline">
+          View profile
+        </Link>
+        <button type="button" className="btn-ghost text-red-600 hover:bg-red-50 dark:hover:bg-red-950" onClick={async () => { await logout(); toast('Signed out') }}>
+          <LogOut className="size-4" /> Log out
+        </button>
+      </div>
     </div>
   )
 }

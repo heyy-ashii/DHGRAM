@@ -1,5 +1,6 @@
+import { PenLine } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { Composer, PostCard } from '../components/PostCard'
+import { PostCard } from '../components/PostCard'
 import StoriesBar from '../components/StoriesBar'
 import { EmptyState, ErrorState, PageSpinner } from '../components/ui'
 import { useAuth } from '../context/AuthContext'
@@ -25,8 +26,13 @@ export default function Home() {
 
       <div className="px-4 pt-6 sm:px-0">
         {user ? (
-          <div className="mb-6">
-            <Composer onDone={() => refetch()} />
+          <div className="card mb-6 flex flex-col items-center gap-3 p-6 text-center">
+            <p className="text-sm text-neutral-600 dark:text-neutral-300">
+              Share a thought from your profile to see it here.
+            </p>
+            <Link to={`/u/${user.username}`} className="btn-primary">
+              <PenLine className="size-4" /> Share a thought
+            </Link>
           </div>
         ) : (
           <div className="card mb-6 flex flex-col items-center gap-3 p-6 text-center">

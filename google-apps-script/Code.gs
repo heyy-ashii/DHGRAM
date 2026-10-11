@@ -27,10 +27,13 @@ var COLLECTIONS = {
   Conversations: ['id', 'user', 'status', 'lastMessage', 'lastMessageAt', 'unreadForAdmin', 'unreadForUser', 'createdAt', 'updatedAt'],
   Messages: ['id', 'conversation', 'sender', 'senderRole', 'body', 'createdAt', 'updatedAt'],
   Posts: ['id', 'author', 'body', 'likes', 'hidden', 'createdAt', 'updatedAt'],
+  Groups: ['id', 'name', 'createdBy', 'members', 'lastMessage', 'lastMessageAt', 'createdAt', 'updatedAt'],
+  GroupMembers: ['id', 'group', 'user', 'createdAt', 'updatedAt'],
+  GroupMessages: ['id', 'group', 'sender', 'body', 'createdAt', 'updatedAt'],
 };
 
 // Values that must stay JSON, not strings.
-var JSON_COLUMNS = { likes: true };
+var JSON_COLUMNS = { likes: true, members: true };
 // Values that must be stored as booleans.
 var BOOLEAN_COLUMNS = { emailVerified: true, hidden: true };
 

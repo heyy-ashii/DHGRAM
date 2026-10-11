@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, MessageSquarePlus, Send, ShieldQuestion } from 'lucide-react'
+import { ArrowLeft, MessageSquarePlus, Send, ShieldQuestion, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import AdminChat from '../components/AdminChat'
 import Avatar from '../components/Avatar'
+import { GroupAvatar, GroupThreadView, NewGroupModal, groupSubtitle } from '../components/GroupChat'
 import SupportInbox from '../components/SupportInbox'
 import { EmptyState, Modal, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../context/AuthContext'
@@ -11,10 +12,11 @@ import { useUi } from '../context/UiContext'
 import { api, errorMessage } from '../lib/api'
 import type { MessageThread } from '../lib/types'
 import { usePageMeta } from '../lib/usePageMeta'
-import { useMessageThread, useMessageThreads, useStudentDirectory } from '../lib/queries'
+import { useGroups, useMessageThread, useMessageThreads, useStudentDirectory } from '../lib/queries'
 import { cn, formatShort, formatTime } from '../lib/utils'
 
 const ADMIN_KEY = 'admin'
+const GROUP_PREFIX = 'g:'
 
 function ThreadView({ id, onBack }: { id: string; onBack: () => void }) {
   const qc = useQueryClient()
@@ -133,9 +135,11 @@ export default function Messages() {
   const [params] = useSearchParams()
   const [selected, setSelected] = useState<string | null>(() => params.get('c'))
   const [picker, setPicker] = useState(false)
+  const [groupPicker, setGroupPicker] = useState(false)
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState<'all' | 'unread'>('all')
   const { data: threads, isLoading } = useMessageThreads(Boolean(user) && !isAdmin)
+  const { data: groups, isLoading: groupsLoading } = useGroups(Boolean(user) && !isAdmin)
   const { data: directory, isLoading: dirLoading } = useStudentDirectory(search, Boolean(user) && !isAdmin)
 
   const start = useMutation({
@@ -203,6 +207,9 @@ export default function Messages() {
             <button className="btn-outline px-3" onClick={() => setSelected(ADMIN_KEY)}>
               <ShieldQuestion className="size-4" /> Support
             </button>
+            <button className="btn-outline px-3" onClick={() => setGroupPicker(true)}>
+              <Users className="size-4" /> Group
+            </button>
             <button className="btn-primary px-3" onClick={() => setPicker(true)}>
               <MessageSquarePlus className="size-4" /> New
             </button>
@@ -226,6 +233,27 @@ export default function Messages() {
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
+            {!search.trim() && tab === 'all' && (groupsLoading || (groups ?? []).length > 0) && (
+              <div className="border-b border-neutral-100 dark:border-neutral-800">
+                <p className="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Groups</p>
+                {(groups ?? []).map((g) => (
+                  <button
+                    key={g._id}
+                    onClick={() => setSelected(GROUP_PREFIX + g._id)}
+                    className={cn('flex w-full items-center gap-3 border-b border-neutral-100 px-4 py-3 text-left hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-800/40', selected === GROUP_PREFIX + g._id && 'bg-blue-50 dark:bg-blue-950/40')}
+                  >
+                    <GroupAvatar group={g} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate font-semibold">{g.name}</span>
+                        <span className="shrink-0 text-[11px] text-neutral-400">{formatShort(g.lastMessageAt)}</span>
+                      </div>
+                      <span className="block truncate text-sm text-neutral-500">{g.lastMessage || groupSubtitle(g)}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
             <button
               onClick={() => setSelected(ADMIN_KEY)}
               className={cn('flex w-full items-center gap-3 border-b border-neutral-100 px-4 py-3 text-left hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-800/40', selected === ADMIN_KEY && 'bg-blue-50 dark:bg-blue-950/40')}
@@ -240,7 +268,7 @@ export default function Messages() {
             </button>
             {isLoading || dirLoading ? (
               <PageSpinner />
-            ) : list.length === 0 ? (
+            ) : list.length === 0 && (search.trim() || tab === 'unread' || (groups ?? []).length === 0) ? (
               <div className="p-6 text-center text-sm text-neutral-500">
                 {search.trim() || tab === 'unread' ? 'Nothing matches that filter.' : (
                   <>
@@ -280,6 +308,8 @@ export default function Messages() {
         <div className={cn('min-h-0', !selected && 'hidden md:block')}>
           {selected === ADMIN_KEY ? (
             <AdminChat onBack={() => setSelected(null)} />
+          ) : selected?.startsWith(GROUP_PREFIX) ? (
+            <GroupThreadView key={selected} id={selected.slice(GROUP_PREFIX.length)} onBack={() => setSelected(null)} />
           ) : selected ? (
             <ThreadView key={selected} id={selected} onBack={() => setSelected(null)} />
           ) : (
@@ -295,6 +325,7 @@ export default function Messages() {
       </div>
 
       <NewChatPicker open={picker} onClose={() => setPicker(false)} onStarted={(id) => setSelected(id)} />
+      <NewGroupModal open={groupPicker} onClose={() => setGroupPicker(false)} onCreated={(id) => setSelected(GROUP_PREFIX + id)} />
     </div>
   )
 }

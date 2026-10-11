@@ -156,7 +156,7 @@ export default function Profile() {
                         <Link to="/account" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800" onClick={() => setMenu(false)}>
                           Account settings
                         </Link>
-                        <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-neutral-100 dark:hover:bg-neutral-800" onClick={() => { setMenu(false); openEditor() }}>
+                        <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-neutral-100 dark:hover:bg-neutral-800" onClick={() => { setMenu(false); setAbout(true) }}>
                           About <BrandName />
                         </button>
                       </div>
@@ -254,7 +254,7 @@ export default function Profile() {
       </Modal>
 
       <Modal open={about} onClose={() => setAbout(false)} title="About DHGRAM" wide>
-        <AboutPanel />
+        <AboutPanel auth />
       </Modal>
     </div>
   )

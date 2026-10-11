@@ -75,6 +75,16 @@ export interface MessageThread {
   unread: number
 }
 
+export interface GroupSummary {
+  _id: string
+  name: string
+  members: PeerUser[]
+  memberCount: number
+  mine: boolean
+  lastMessage: string
+  lastMessageAt: string
+}
+
 export interface PeerMessage {
   _id: string
   body: string

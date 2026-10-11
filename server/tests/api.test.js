@@ -269,6 +269,83 @@ describe('peer messages', () => {
   });
 });
 
+describe('groups', () => {
+  it('requires a login to list or create groups', async () => {
+    expect((await request(app).get('/api/v1/groups')).status).toBe(401);
+    expect((await request(app).post('/api/v1/groups').send({ name: 'x' })).status).toBe(401);
+  });
+
+  it('creates a group with members and exchanges messages without an admin', async () => {
+    const { User } = await import('../models/User.js');
+    await User.create({ name: 'Group One', username: 'groupone', password: 'groupone1' });
+    await User.create({ name: 'Group Two', username: 'grouptwo', password: 'grouptwo1' });
+    await User.create({ name: 'Group Three', username: 'groupthree', password: 'groupthree1' });
+    const { agent: one } = await login('groupone', 'groupone1');
+    const { agent: two } = await login('grouptwo', 'grouptwo1');
+
+    const meId = (await one.get('/api/v1/auth/me')).body.data.user._id;
+    const dir = await one.get('/api/v1/messages/directory?q=grouptwo');
+    const twoId = dir.body.data.users.find((u) => u.username === 'grouptwo')._id;
+
+    // The creator is always included even when only another id is sent.
+    const created = await one.post('/api/v1/groups').send({ name: 'Study buddies', memberIds: [twoId] });
+    expect(created.status).toBe(201);
+    expect(created.body.data.group.name).toBe('Study buddies');
+    expect(created.body.data.group.memberCount).toBe(2);
+    expect(created.body.data.group.mine).toBe(true);
+    const id = created.body.data.group._id;
+
+    // Both members see it; a third student does not.
+    expect((await one.get('/api/v1/groups')).body.data.groups.map((g) => g._id)).toContain(id);
+    expect((await two.get('/api/v1/groups')).body.data.groups.map((g) => g._id)).toContain(id);
+    await User.create({ name: 'Group Four', username: 'groupfour', password: 'groupfour1' });
+    const { agent: four } = await login('groupfour', 'groupfour1');
+    expect((await four.get('/api/v1/groups')).body.data.groups).toHaveLength(0);
+    expect((await four.get(`/api/v1/groups/${id}`)).status).toBe(404);
+
+    await two.post(`/api/v1/groups/${id}/messages`).send({ body: 'hi all' });
+    const thread = await one.get(`/api/v1/groups/${id}`);
+    expect(thread.body.data.messages.map((m) => m.body)).toEqual(['hi all']);
+    expect(thread.body.data.messages[0].mine).toBe(false);
+    expect((await one.get('/api/v1/groups')).body.data.groups[0].lastMessage).toBe('hi all');
+
+    // Any member can add others.
+    const dirThree = await two.get('/api/v1/messages/directory?q=groupthree');
+    const threeId = dirThree.body.data.users.find((u) => u.username === 'groupthree')._id;
+    expect((await two.post(`/api/v1/groups/${id}/members`).send({ memberIds: [threeId] })).status).toBe(200);
+    expect((await one.get(`/api/v1/groups/${id}`)).body.data.group.memberCount).toBe(3);
+
+    // A member can leave; a non-member cannot.
+    expect((await four.delete(`/api/v1/groups/${id}/members/me`)).status).toBe(404);
+    expect((await two.delete(`/api/v1/groups/${id}/members/me`)).status).toBe(204);
+    expect((await two.get(`/api/v1/groups/${id}`)).status).toBe(404);
+    expect((await one.get(`/api/v1/groups/${id}`)).body.data.group.memberCount).toBe(2);
+    expect(meId).toBeTruthy();
+  });
+
+  it('drops group messages older than the retention window', async () => {
+    const { Group, GroupMessage } = await import('../models/GroupChat.js');
+    const { User } = await import('../models/User.js');
+    const mongoose = (await import('mongoose')).default;
+    await User.create({ name: 'G Ret', username: 'gret', password: 'gretpass1' });
+    const { agent } = await login('gret', 'gretpass1');
+    const id = (await agent.post('/api/v1/groups').send({ name: 'Old group' })).body.data.group._id;
+
+    const meId = (await agent.get('/api/v1/auth/me')).body.data.user._id;
+    await GroupMessage.create({ group: id, sender: meId, body: 'old group message' });
+    const old = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000);
+    await GroupMessage.collection.updateMany(
+      { group: new mongoose.Types.ObjectId(id) },
+      { $set: { createdAt: old } },
+    );
+
+    const thread = await agent.get(`/api/v1/groups/${id}`);
+    expect(thread.body.data.messages).toHaveLength(0);
+    expect(thread.body.data.group.lastMessage).toBe('');
+    expect(await Group.countDocuments({})).toBeGreaterThan(0);
+  });
+});
+
 describe('security', () => {
   it('does not reflect arbitrary origins and hides stack details', async () => {
     const res = await request(app).get('/api/v1/health').set('Origin', 'https://evil.com');

@@ -147,6 +147,51 @@ const peerMessageSpec = {
   publicJSON: (m) => ({ _id: m._id, conversation: m.conversation, sender: m.sender, body: m.body, createdAt: m.createdAt }),
 };
 
+const groupSpec = {
+  name: 'Groups',
+  table: 'app_groups',
+  columns: {
+    name: 'name',
+    createdBy: 'created_by',
+    members: 'members',
+    lastMessage: 'last_message',
+    lastMessageAt: 'last_message_at',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+  },
+  dates: dateFields(['lastMessageAt']),
+  defaults: { members: [], lastMessage: '', lastMessageAt: () => new Date() },
+  publicJSON: (g) => ({ ...g }),
+};
+
+const groupMemberSpec = {
+  name: 'GroupMembers',
+  table: 'app_group_members',
+  columns: {
+    group: 'group_id',
+    user: 'user_id',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+  },
+  dates: dateFields(),
+  upsertOn: ['group_id', 'user_id'],
+  publicJSON: (m) => ({ ...m }),
+};
+
+const groupMessageSpec = {
+  name: 'GroupMessages',
+  table: 'app_group_messages',
+  columns: {
+    group: 'group_id',
+    sender: 'sender_id',
+    body: 'body',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+  },
+  dates: dateFields(),
+  publicJSON: (m) => ({ _id: m._id, group: m.group, sender: m.sender, body: m.body, createdAt: m.createdAt }),
+};
+
 const storySpec = {
   name: 'Stories',
   table: 'app_stories',
@@ -181,6 +226,9 @@ export const SupabaseMessage = createCollection(messageSpec);
 export const SupabasePost = createCollection(postSpec);
 export const SupabasePeerConversation = createCollection(peerConversationSpec);
 export const SupabasePeerMessage = createCollection(peerMessageSpec);
+export const SupabaseGroup = createCollection(groupSpec);
+export const SupabaseGroupMember = createCollection(groupMemberSpec);
+export const SupabaseGroupMessage = createCollection(groupMessageSpec);
 export const SupabaseStory = createCollection(storySpec);
 export const SupabaseStoryView = createCollection(storyViewSpec);
 
@@ -188,6 +236,7 @@ conversationSpec.populates = { user: SupabaseUser };
 postSpec.populates = { author: SupabaseUser };
 peerConversationSpec.populates = { userA: SupabaseUser, userB: SupabaseUser };
 peerMessageSpec.populates = { sender: SupabaseUser };
+groupMessageSpec.populates = { sender: SupabaseUser };
 storySpec.populates = { author: SupabaseUser };
 
 export const publicUser = userSpec.publicJSON;
