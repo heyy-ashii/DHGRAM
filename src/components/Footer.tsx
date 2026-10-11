@@ -38,7 +38,6 @@ export default function Footer() {
           <ul className="space-y-2 text-sm text-neutral-500">
             <li><Link className="hover:text-brand" to="/messages">Messages</Link></li>
             <li><Link className="hover:text-brand" to="/feed">Thoughts</Link></li>
-            <li><Link className="hover:text-brand" to="/about">About</Link></li>
             <li><Link className="hover:text-brand" to="/contact">Contact</Link></li>
           </ul>
         </div>

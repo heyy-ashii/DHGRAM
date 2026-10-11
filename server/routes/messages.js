@@ -18,7 +18,7 @@ const plain = (doc) => (typeof doc.toObject === 'function' ? doc.toObject() : do
 
 const shapePeerUser = (value) => {
   const peer = value && typeof value === 'object' ? value : { _id: value };
-  return { _id: peer._id, name: peer.name ?? '', username: peer.username ?? '' };
+  return { _id: peer._id, name: peer.name ?? '', username: peer.username ?? '', avatar: peer.avatar ?? null };
 };
 
 const shapeConversation = (c, userId) => {
@@ -59,8 +59,8 @@ router.get(
     const conversations = await PeerConversation.find({ $or: [{ userA: me }, { userB: me }] })
       .sort({ lastMessageAt: -1 })
       .limit(200)
-      .populate('userA', 'name username')
-      .populate('userB', 'name username')
+      .populate('userA', 'name username avatar')
+      .populate('userB', 'name username avatar')
       .lean();
     res.set('Cache-Control', 'no-store');
     res.json({ status: 'success', data: { conversations: conversations.map((c) => shapeConversation(c, me)) } });
@@ -111,7 +111,7 @@ router.get(
       total,
       page,
       pages: Math.max(1, Math.ceil(total / limit)),
-      data: { users: users.map((u) => ({ _id: u._id, name: u.name ?? '', username: u.username ?? '' })) },
+      data: { users: users.map((u) => ({ _id: u._id, name: u.name ?? '', username: u.username ?? '', avatar: u.avatar ?? null })) },
     });
   }),
 );
@@ -131,8 +131,8 @@ router.post(
     const { userA, userB } = pairFor(me, otherId);
     let conversation = await PeerConversation.findOne({ userA, userB });
     if (!conversation) conversation = await PeerConversation.create({ userA, userB });
-    await conversation.populate('userA', 'name username');
-    await conversation.populate('userB', 'name username');
+    await conversation.populate('userA', 'name username avatar');
+    await conversation.populate('userB', 'name username avatar');
     res.status(201).json({ status: 'success', data: { conversation: shapeConversation(plain(conversation), me) } });
   }),
 );
@@ -151,8 +151,8 @@ router.get(
     const me = req.user._id;
     const conversation = await loadConversation(req.params.id, me);
     await purgeOldPeerMessages(conversation);
-    await conversation.populate('userA', 'name username');
-    await conversation.populate('userB', 'name username');
+    await conversation.populate('userA', 'name username avatar');
+    await conversation.populate('userB', 'name username avatar');
 
     const messages = await PeerMessage.find({ conversation: conversation._id }).sort({ createdAt: 1 }).limit(200).lean();
     const side = sideFor(conversation, me);

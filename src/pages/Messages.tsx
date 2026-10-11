@@ -1,25 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, MessageSquarePlus, Send } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import Avatar from '../components/Avatar'
 import { EmptyState, Modal, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
 import { api, errorMessage } from '../lib/api'
-import type { MessageThread, PeerUser } from '../lib/types'
+import type { MessageThread } from '../lib/types'
 import { usePageMeta } from '../lib/usePageMeta'
 import { useMessageThread, useMessageThreads, useStudentDirectory } from '../lib/queries'
 import { cn, formatShort, formatTime } from '../lib/utils'
-
-const initials = (name: string) => name.slice(0, 1).toUpperCase() || '?'
-
-function Avatar({ user, size = 'md' }: { user: Pick<PeerUser, 'name'>; size?: 'sm' | 'md' | 'lg' }) {
-  return (
-    <span className={cn('grid shrink-0 place-items-center rounded-full bg-brand/10 font-bold text-brand', size === 'sm' ? 'size-9 text-sm' : size === 'lg' ? 'size-12 text-base' : 'size-11 text-sm')}>
-      {initials(user.name)}
-    </span>
-  )
-}
 
 function ThreadView({ id, onBack }: { id: string; onBack: () => void }) {
   const qc = useQueryClient()
@@ -135,7 +126,8 @@ export default function Messages() {
   const qc = useQueryClient()
   const { toast } = useUi()
   const { user } = useAuth()
-  const [selected, setSelected] = useState<string | null>(null)
+  const [params] = useSearchParams()
+  const [selected, setSelected] = useState<string | null>(() => params.get('c'))
   const [picker, setPicker] = useState(false)
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState<'all' | 'unread'>('all')

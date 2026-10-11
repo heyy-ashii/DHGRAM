@@ -10,6 +10,7 @@ import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
 import messageRoutes from './routes/messages.js';
 import postRoutes from './routes/posts.js';
+import storyRoutes from './routes/stories.js';
 import { asyncHandler } from './utils/AppError.js';
 
 export function createApp({ connect = connectDB } = {}) {
@@ -64,6 +65,7 @@ export function createApp({ connect = connectDB } = {}) {
 
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1/posts', postRoutes);
+  app.use('/api/v1/stories', storyRoutes);
   app.use('/api/v1/messages', messageRoutes);
   app.use('/api/v1/admin', adminRoutes);
   app.use('/api/v1/chat', chatRoutes);

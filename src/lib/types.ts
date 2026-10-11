@@ -7,6 +7,7 @@ export interface User {
   email: string | null
   role: Role
   status: 'active' | 'disabled'
+  avatar?: string | null
   emailVerified: boolean
   lastLoginAt: string | null
   createdAt: string
@@ -49,7 +50,22 @@ export interface Conversation {
   unreadForUser: number
 }
 
-export type PeerUser = Pick<User, '_id' | 'name' | 'username'>
+export type PeerUser = Pick<User, '_id' | 'name' | 'username'> & { avatar?: string | null }
+
+export interface Story {
+  _id: string
+  imageUrl: string
+  author: PeerUser
+  mine: boolean
+  seen: boolean
+  createdAt: string
+}
+
+export interface StoryGroup {
+  user: PeerUser
+  unseen: boolean
+  stories: Story[]
+}
 
 export interface MessageThread {
   _id: string
