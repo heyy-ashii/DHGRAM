@@ -313,3 +313,70 @@ describe('security', () => {
     expect((await request(app).get('/api/v1/nope')).status).toBe(404);
   });
 });
+
+describe('stories', () => {
+  it('lets anyone read the feed but requires a login to post', async () => {
+    expect((await request(app).get('/api/v1/stories')).status).toBe(200);
+    expect((await request(app).post('/api/v1/stories').send({ imageUrl: 'data:image/png;base64,AAAA' })).status).toBe(401);
+  });
+
+  it('groups stories by author, tracks views and limits deletion to the owner', async () => {
+    const { User } = await import('../models/User.js');
+    await User.create({ name: 'Story One', username: 'storyone', password: 'storyone1' });
+    await User.create({ name: 'Story Two', username: 'storytwo', password: 'storytwo1' });
+    const { agent: one } = await login('storyone', 'storyone1');
+    const { agent: two } = await login('storytwo', 'storytwo1');
+
+    const created = await one.post('/api/v1/stories').send({ imageUrl: 'data:image/png;base64,AAAA' });
+    expect(created.status).toBe(201);
+    const storyId = created.body.data.story._id;
+
+    const feed = await two.get('/api/v1/stories');
+    const group = feed.body.data.groups.find((g) => g.user.username === 'storyone');
+    expect(group.stories).toHaveLength(1);
+    expect(group.unseen).toBe(true);
+
+    // Viewing marks it seen for the viewer.
+    expect((await two.post(`/api/v1/stories/${storyId}/view`)).status).toBe(200);
+    const after = await two.get('/api/v1/stories');
+    const seenGroup = after.body.data.groups.find((g) => g.user.username === 'storyone');
+    expect(seenGroup.unseen).toBe(false);
+
+    // Only the author can see who watched.
+    expect((await two.get(`/api/v1/stories/${storyId}/viewers`)).status).toBe(403);
+    const viewers = await one.get(`/api/v1/stories/${storyId}/viewers`);
+    expect(viewers.body.data.viewers.map((v) => v.username)).toContain('storytwo');
+
+    // Another student cannot delete the story.
+    expect((await two.delete(`/api/v1/stories/${storyId}`)).status).toBe(403);
+    expect((await one.delete(`/api/v1/stories/${storyId}`)).status).toBe(204);
+    expect((await one.get('/api/v1/stories/mine')).body.data.stories).toHaveLength(0);
+  });
+});
+
+describe('profile', () => {
+  it('exposes a public profile and lets the owner set an avatar', async () => {
+    const { agent } = await login('newbie', 'newpassword1');
+    const publicView = await request(app).get('/api/v1/auth/users/newbie');
+    expect(publicView.status).toBe(200);
+    expect(publicView.body.data.user.username).toBe('newbie');
+    expect(publicView.body.data.user).not.toHaveProperty('password');
+
+    const avatar = 'data:image/jpeg;base64,/9j/AAAA';
+    const updated = await agent.patch('/api/v1/auth/update-me').send({ avatar });
+    expect(updated.status).toBe(200);
+    expect(updated.body.data.user.avatar).toBe(avatar);
+    expect((await request(app).get('/api/v1/auth/users/newbie')).body.data.user.avatar).toBe(avatar);
+
+    expect((await request(app).get('/api/v1/auth/users/nobodyhere')).status).toBe(404);
+  });
+
+  it('filters the feed to a single author', async () => {
+    const { agent } = await login('newbie', 'newpassword1');
+    await agent.post('/api/v1/posts').send({ body: 'Author filtered thought' });
+    const meId = (await agent.get('/api/v1/auth/me')).body.data.user._id;
+    const mine = await request(app).get(`/api/v1/posts?author=${meId}`);
+    expect(mine.body.total).toBeGreaterThan(0);
+    expect(mine.body.data.posts.every((p) => p.author._id === meId)).toBe(true);
+  });
+});

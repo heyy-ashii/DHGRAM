@@ -3,7 +3,6 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { RequireAdmin, RequireAuth } from './components/Guards'
 import PublicLayout from './components/PublicLayout'
 import { PageSpinner } from './components/ui'
-import About from './pages/About'
 import Contact from './pages/Contact'
 import Feed from './pages/Feed'
 import Home from './pages/Home'
@@ -11,6 +10,7 @@ import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 
 const Account = lazy(() => import('./pages/Account'))
+const Profile = lazy(() => import('./pages/Profile'))
 const Messages = lazy(() => import('./pages/Messages'))
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
@@ -32,9 +32,18 @@ export default function App() {
               </RequireAuth>
             }
           />
-          <Route path="about" element={<About />} />
+          <Route
+            path="profile"
+            element={
+              <RequireAuth>
+                <Profile />
+              </RequireAuth>
+            }
+          />
+          <Route path="u/:username" element={<Profile />} />
           <Route path="contact" element={<Contact />} />
           <Route path="discover" element={<Navigate to="/feed" replace />} />
+          <Route path="about" element={<Navigate to="/profile" replace />} />
           <Route path="programs/:id" element={<Navigate to="/feed" replace />} />
           <Route path="search" element={<Navigate to="/feed" replace />} />
           <Route path="login" element={<Login />} />

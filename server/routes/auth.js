@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { Router } from 'express';
 import { z } from 'zod';
 import { config } from '../config.js';
-import { protect } from '../middleware/auth.js';
+import { optionalAuth, protect } from '../middleware/auth.js';
 import { loginLimiter, otpLimiter } from '../middleware/rateLimit.js';
 import { email, name, password, username, validate } from '../middleware/validate.js';
 import { Otp } from '../models/Otp.js';
@@ -170,10 +170,31 @@ router.get('/me', protect, (req, res) => {
   res.json({ status: 'success', data: { user: req.user.toPublicJSON() } });
 });
 
+// Public profile for a username, so a thought can link to its author.
+router.get(
+  '/users/:username',
+  optionalAuth,
+  validate(z.object({ username }), 'params'),
+  asyncHandler(async (req, res) => {
+    const user = await User.findOne({ username: req.params.username });
+    if (!user || user.status !== 'active') throw new AppError('Profile not found', 404);
+    res.set('Cache-Control', 'no-store');
+    res.json({ status: 'success', data: { user: user.toPublicJSON() } });
+  }),
+);
+
 router.patch(
   '/update-me',
   protect,
-  validate(z.object({ name: name.optional(), username: username.optional() })),
+  validate(
+    z.object({
+      name: name.optional(),
+      username: username.optional(),
+      // Profile picture as a data URL. Bounded so a client cannot push an
+      // arbitrarily large blob into the row.
+      avatar: z.string().trim().max(1_500_000).optional(),
+    }),
+  ),
   asyncHandler(async (req, res) => {
     Object.assign(req.user, req.body);
     await req.user.save({ validateModifiedOnly: true });

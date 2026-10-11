@@ -16,6 +16,7 @@ const userSpec = {
     email: u.email ?? null,
     role: u.role,
     status: u.status,
+    avatar: u.avatar ?? null,
     emailVerified: Boolean(u.emailVerified),
     lastLoginAt: u.lastLoginAt ?? null,
     createdAt: u.createdAt,
@@ -66,6 +67,18 @@ const peerMessageSpec = {
   publicJSON: (m) => ({ _id: m._id, conversation: m.conversation, sender: m.sender, body: m.body, createdAt: m.createdAt }),
 };
 
+const storySpec = {
+  name: 'Stories',
+  dates: dateFields(),
+  publicJSON: (s) => ({ ...s }),
+};
+
+const storyViewSpec = {
+  name: 'StoryViews',
+  dates: dateFields(),
+  publicJSON: (v) => ({ ...v }),
+};
+
 export const SheetsUser = createCollection(userSpec);
 export const SheetsOtp = createCollection(otpSpec);
 export const SheetsConversation = createCollection(conversationSpec);
@@ -73,11 +86,14 @@ export const SheetsMessage = createCollection(messageSpec);
 export const SheetsPost = createCollection(postSpec);
 export const SheetsPeerConversation = createCollection(peerConversationSpec);
 export const SheetsPeerMessage = createCollection(peerMessageSpec);
+export const SheetsStory = createCollection(storySpec);
+export const SheetsStoryView = createCollection(storyViewSpec);
 
 conversationSpec.populates = { user: SheetsUser };
 postSpec.populates = { author: SheetsUser };
 peerConversationSpec.populates = { userA: SheetsUser, userB: SheetsUser };
 peerMessageSpec.populates = { sender: SheetsUser };
+storySpec.populates = { author: SheetsUser };
 
 // Shared shape for a user as returned to clients, used for .lean() results.
 export const publicUser = userSpec.publicJSON;

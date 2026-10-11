@@ -15,6 +15,7 @@ const userSpec = {
     password: 'password',
     role: 'role',
     status: 'status',
+    avatar: 'avatar',
     emailVerified: 'email_verified',
     passwordChangedAt: 'password_changed_at',
     lastLoginAt: 'last_login_at',
@@ -35,6 +36,7 @@ const userSpec = {
     email: u.email ?? null,
     role: u.role,
     status: u.status,
+    avatar: u.avatar ?? null,
     emailVerified: Boolean(u.emailVerified),
     lastLoginAt: u.lastLoginAt ?? null,
     createdAt: u.createdAt,
@@ -145,6 +147,33 @@ const peerMessageSpec = {
   publicJSON: (m) => ({ _id: m._id, conversation: m.conversation, sender: m.sender, body: m.body, createdAt: m.createdAt }),
 };
 
+const storySpec = {
+  name: 'Stories',
+  table: 'app_stories',
+  columns: {
+    author: 'author_id',
+    imageUrl: 'image_url',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+  },
+  dates: dateFields(),
+  publicJSON: (s) => ({ ...s }),
+};
+
+const storyViewSpec = {
+  name: 'StoryViews',
+  table: 'app_story_views',
+  columns: {
+    story: 'story_id',
+    viewer: 'viewer_id',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+  },
+  dates: dateFields(),
+  upsertOn: ['story_id', 'viewer_id'],
+  publicJSON: (v) => ({ ...v }),
+};
+
 export const SupabaseUser = createCollection(userSpec);
 export const SupabaseOtp = createCollection(otpSpec);
 export const SupabaseConversation = createCollection(conversationSpec);
@@ -152,10 +181,13 @@ export const SupabaseMessage = createCollection(messageSpec);
 export const SupabasePost = createCollection(postSpec);
 export const SupabasePeerConversation = createCollection(peerConversationSpec);
 export const SupabasePeerMessage = createCollection(peerMessageSpec);
+export const SupabaseStory = createCollection(storySpec);
+export const SupabaseStoryView = createCollection(storyViewSpec);
 
 conversationSpec.populates = { user: SupabaseUser };
 postSpec.populates = { author: SupabaseUser };
 peerConversationSpec.populates = { userA: SupabaseUser, userB: SupabaseUser };
 peerMessageSpec.populates = { sender: SupabaseUser };
+storySpec.populates = { author: SupabaseUser };
 
 export const publicUser = userSpec.publicJSON;

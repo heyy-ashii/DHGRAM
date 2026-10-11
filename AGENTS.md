@@ -2,8 +2,9 @@
 
 ## Project
 
-DHGRAM – "Share & Message". A chat + thought-sharing platform: a public Thoughts
-feed, one-to-one student Messages, and a Chat-with-Admin panel. React (Vite)
+DHGRAM – "Share & Message". A chat + thought-sharing platform: a home page with
+24-hour Stories and a public Thoughts feed, one-to-one student Messages, profiles
+with avatars, and a Chat-with-Admin panel. React (Vite)
 frontend + Express API. Frontend in `src/`, API in `server/`, Vercel serverless
 entry in `api/index.js`.
 
@@ -69,6 +70,17 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
 - The `/messages` sidebar lists **all other active students** (from
   `/messages/directory`) on top of existing conversations; picking someone with
   no thread calls `/messages/start` and opens it.
+
+## Stories & profiles
+
+- `server/routes/stories.js` + `server/models/Story.js` (and `StoryView`). A story
+  is an image that expires after 24 hours; the feed groups live stories by author
+  and marks unseen ones. Views are one row per (story, viewer).
+- Profile pictures live on `app_users.avatar`; the public profile endpoint is
+  `GET /auth/users/:username`, and `/posts?author=<id>` backs a profile's thoughts.
+- Images are downscaled in the browser (`src/lib/image.ts`) and stored as data
+  URLs, so there is no object storage. The API caps avatar/story payloads at
+  ~1.5 MB, so raise both the client compression and the Zod limit together.
 
 ## Gotchas
 

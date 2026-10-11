@@ -15,4 +15,5 @@ export const loginLimiter = make(15, 20, 'Too many login attempts. Try again in 
 export const otpLimiter = make(15, 6, 'Too many code requests. Try again in 15 minutes.');
 export const chatLimiter = make(1, 20, 'You are sending messages too quickly.');
 export const postLimiter = make(1, 10, 'You are posting too quickly.');
+export const storyLimiter = make(1, 10, 'You are posting stories too quickly.');
 export const cronLimiter = make(1, 10, 'Too many cleanup runs.');

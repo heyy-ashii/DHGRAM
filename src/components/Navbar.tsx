@@ -1,5 +1,7 @@
-import { Home, Info, LayoutDashboard, LogIn, MessageCircle, MessageSquare, Moon, Sun, User as UserIcon, type LucideIcon } from 'lucide-react'
+import { Home, LayoutDashboard, LogIn, LogOut, MessageCircle, MessageSquare, Moon, Sun, User as UserIcon, type LucideIcon } from 'lucide-react'
+import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
+import Avatar from './Avatar'
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
 import { cn } from '../lib/utils'
@@ -11,13 +13,14 @@ const links: NavItem[] = [
   { key: 'home', to: '/', label: 'Home', icon: Home },
   { key: 'feed', to: '/feed', label: 'Thoughts', icon: MessageSquare },
   { key: 'messages', to: '/messages', label: 'Messages', icon: MessageCircle },
-  { key: 'about', to: '/about', label: 'About', icon: Info },
 ]
 
 export default function Navbar() {
   const { theme, toggleTheme } = useUi()
-  const { user, isAdmin } = useAuth()
-  const navItems = isAdmin ? links.filter((l) => l.key !== 'messages') : links
+  const { user, isAdmin, logout } = useAuth()
+  const [menu, setMenu] = useState(false)
+  const base = isAdmin ? links.filter((l) => l.key !== 'messages') : links
+  const navItems: NavItem[] = [...base, { key: 'profile', to: user ? `/u/${user.username}` : '/login', label: 'Profile', icon: UserIcon }]
 
   return (
     <>
@@ -51,10 +54,34 @@ export default function Navbar() {
               </Link>
             )}
             {user ? (
-              <Link to="/account" className="btn-dark px-3" aria-label="My account">
-                <UserIcon className="size-4" />
-                <span className="hidden max-w-28 truncate sm:inline">{user.name.split(' ')[0]}</span>
-              </Link>
+              <div className="relative">
+                <button className="rounded-full" onClick={() => setMenu((m) => !m)} aria-label="Account menu">
+                  <Avatar user={user} size="sm" />
+                </button>
+                {menu && (
+                  <>
+                    <button className="fixed inset-0 z-10 cursor-default" aria-hidden onClick={() => setMenu(false)} tabIndex={-1} />
+                    <div className="card absolute right-0 z-20 mt-2 w-48 overflow-hidden p-1 text-sm">
+                      <div className="px-3 py-2">
+                        <p className="truncate font-semibold">{user.name}</p>
+                        <p className="truncate text-xs text-neutral-500">@{user.username}</p>
+                      </div>
+                      <Link to={`/u/${user.username}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800" onClick={() => setMenu(false)}>
+                        <UserIcon className="size-4" /> My profile
+                      </Link>
+                      <Link to="/account" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800" onClick={() => setMenu(false)}>
+                        Account settings
+                      </Link>
+                      <button
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                        onClick={async () => { setMenu(false); await logout() }}
+                      >
+                        <LogOut className="size-4" /> Logout
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             ) : (
               <Link to="/login" className="btn-dark px-3">
                 <LogIn className="size-4" /> Login

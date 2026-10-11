@@ -1,17 +1,39 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
-import type { MessageThread, PeerMessage, PostList, UserDirectory } from './types'
+import type { MessageThread, PeerMessage, PostList, Story, StoryGroup, User, UserDirectory } from './types'
 
 export type Stats = { users: number; admins: number; disabled: number; openChats: number; unreadMessages: number }
 
 export const useStats = () =>
   useQuery({ queryKey: ['admin', 'stats'], queryFn: () => api<{ data: Stats }>('/admin/stats').then((r) => r.data), refetchInterval: 30000 })
 
-export const usePosts = ({ page = 1, limit = 20, mine = false }: { page?: number; limit?: number; mine?: boolean } = {}) =>
+export const useStories = () =>
   useQuery({
-    queryKey: ['posts', { page, limit, mine }],
-    queryFn: () => api<PostList>('/posts', { query: { page, limit, mine: mine ? 'true' : undefined } }),
+    queryKey: ['stories', 'feed'],
+    queryFn: () => api<{ data: { groups: StoryGroup[] } }>('/stories').then((r) => r.data.groups),
+    refetchInterval: 60000,
+  })
+
+export const useMyStories = (enabled = true) =>
+  useQuery({
+    queryKey: ['stories', 'mine'],
+    queryFn: () => api<{ data: { stories: Story[] } }>('/stories/mine').then((r) => r.data.stories),
+    enabled,
+  })
+
+export const usePosts = ({ page = 1, limit = 20, mine = false, author }: { page?: number; limit?: number; mine?: boolean; author?: string } = {}) =>
+  useQuery({
+    queryKey: ['posts', { page, limit, mine, author }],
+    queryFn: () => api<PostList>('/posts', { query: { page, limit, mine: mine ? 'true' : undefined, author } }),
     placeholderData: (prev) => prev,
+  })
+
+export const useProfile = (username?: string) =>
+  useQuery({
+    queryKey: ['profile', username],
+    queryFn: () => api<{ data: { user: User } }>(`/auth/users/${username}`).then((r) => r.data.user),
+    enabled: Boolean(username),
+    retry: false,
   })
 
 export const useMessageThreads = (enabled = true) =>

@@ -15,9 +15,9 @@ Because the site and the API share one domain, there is no cross-site cookie/COR
 
 ## Routes
 
-**Public:** `/` · `/feed` (Thoughts) · `/messages` (one-to-one chat, signed-in) · `/about` · `/contact` · `/login` · `/signup` · `/account` (signed-in users)
+**Public:** `/` (stories + Thoughts feed) · `/feed` (Thoughts) · `/messages` (one-to-one chat, signed-in) · `/profile` (own profile, signed-in) · `/u/:username` (any profile) · `/contact` · `/login` · `/signup` · `/account` (signed-in users)
 
-Legacy `/discover`, `/programs/:id` and `/search` redirect to `/feed`.
+Legacy `/about` redirects to `/profile`; `/discover`, `/programs/:id` and `/search` redirect to `/feed`.
 
 **Admin (role `admin` only):** `/admin` (stats) · `/admin/users` (user table) · `/admin/chats` (chat inbox)
 
@@ -26,22 +26,27 @@ Legacy `/discover`, `/programs/:id` and `/search` redirect to `/feed`.
 | Area | Endpoints |
 | --- | --- |
 | Health | `GET /health` |
-| Auth | `POST /auth/signup`, `POST /auth/login`, `POST /auth/logout`, `POST /auth/password/request-otp`, `POST /auth/password/reset`, `GET /auth/me`, `PATCH /auth/update-me`, `PATCH /auth/update-password` |
-| Posts | `GET /posts`, signed-in: `POST /posts`, `PATCH /posts/:id`, `DELETE /posts/:id`, `POST /posts/:id/like` |
+| Auth | `POST /auth/signup`, `POST /auth/login`, `POST /auth/logout`, `POST /auth/password/request-otp`, `POST /auth/password/reset`, `GET /auth/me`, `GET /auth/users/:username`, `PATCH /auth/update-me`, `PATCH /auth/update-password` |
+| Posts | `GET /posts` (optionally `?author=<id>`), signed-in: `POST /posts`, `PATCH /posts/:id`, `DELETE /posts/:id`, `POST /posts/:id/like` |
+| Stories | `GET /stories`, signed-in: `GET /stories/mine`, `POST /stories`, `DELETE /stories/:id`, `POST /stories/:id/view`, `GET /stories/:id/viewers` |
 | Messages | signed-in: `GET /messages`, `GET /messages/directory`, `POST /messages/start`, `GET /messages/:id`, `POST /messages/:id`, `GET /messages/unread` |
 | Admin | `GET /admin/stats`, `GET/POST /admin/users`, `PATCH/DELETE /admin/users/:id` |
 | Chat | user: `GET /chat/me`, `GET /chat/me/unread`, `POST /chat/me/messages`; admin: `GET /chat/conversations`, `GET/POST /chat/conversations/:id/messages`, `PATCH /chat/conversations/:id` |
 
 ## Features
 
-- **Thoughts:** any signed-in account can post text thoughts to the public feed, edit or delete their own, and like others' posts.
+- **Stories:** the home page opens with an Instagram-style story tray. Signed-in students post a photo that stays live for **24 hours**; a coloured ring marks unseen stories. Tapping an avatar opens a full-screen viewer with tap/arrow navigation. Views are recorded per viewer, and the author (or an admin) can see who watched.
+- **Thoughts:** any signed-in account can post text thoughts to the public feed, edit or delete their own, and like others' posts. Thoughts appear under the story tray on the home page and on each profile.
+- **Profiles:** `/u/:username` shows anyone's avatar, thought count and thoughts. Your own profile (`/profile`) also lets you change your name/username and **add, change or remove a profile picture**. The former About content now lives in the profile's three-dot menu.
 - **Messages:** signed-in students see **all other students** in the Messages sidebar (not just existing conversations) and start a one-to-one chat from there. The page is full-screen. Messages refresh by polling.
 - **30-day retention:** messages older than `CHAT_RETENTION_DAYS` (30 by default) are deleted when a thread is read and by the daily cleanup cron.
-- **Footer:** `ogea.sms@gmail.com` opens the mail app (`mailto:`); **Chat with Admin** opens the chat panel.
+- **Footer:** **Chat with Admin** opens the chat panel.
 - **Chat with Admin:** signed-in users message the admins from any page; admins reply from `/admin/chats` and can mark conversations resolved.
-- **Create Account:** on `/about`, `/login` or `/signup`. The student enters the name and admission number on the student list; a matching entry creates an account whose username is built from the name and whose initial password is the admission number. There is no email step.
+- **Create Account:** on `/login` or `/signup`. The student enters the name and admission number on the student list; a matching entry creates an account whose username is built from the name and whose initial password is the admission number. There is no email step.
 - **Forgot password:** reset by emailed code.
 - **Admin user table:** search, filter by role or status, add, edit, change role, enable or disable, reset password, delete. Passwords are bcrypt-hashed, so **nobody, admins included, can view an existing password**. An admin can only set a new one. Admins can't demote, disable or delete themselves.
+
+> Images (avatars and stories) are downscaled in the browser and stored inline as data URLs, so there is no object-storage service to configure. Keep an eye on row size if you raise the client compression limits.
 
 ## Security
 

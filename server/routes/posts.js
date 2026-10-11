@@ -18,7 +18,7 @@ const shapePost = (p, userId) => {
   return {
     _id: p._id,
     body: p.body,
-    author: { _id: author._id, name: author.name ?? '', username: author.username ?? '' },
+    author: { _id: author._id, name: author.name ?? '', username: author.username ?? '', avatar: author.avatar ?? null },
     likes: likes.length,
     likedByMe: userId ? likes.some((l) => String(l) === String(userId)) : false,
     mine: userId && author._id ? String(author._id) === String(userId) : false,
@@ -32,29 +32,31 @@ const listQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   mine: z.coerce.boolean().default(false),
+  author: objectId.optional(),
 });
 
-// Public feed. `mine` narrows it to the signed-in author; hidden posts are only
-// visible to admins.
+// Public feed. `mine` narrows it to the signed-in author; `author` shows one
+// person's thoughts on their profile; hidden posts are only visible to admins.
 router.get(
   '/',
   optionalAuth,
   validate(listQuery, 'query'),
   asyncHandler(async (req, res) => {
-    const { page, limit, mine } = req.validated.query;
+    const { page, limit, mine, author } = req.validated.query;
     const isAdmin = req.user?.role === 'admin';
     if (mine && !req.user) throw new AppError('Log in to see your posts', 401);
 
     const filter = {};
     if (!isAdmin) filter.hidden = false;
     if (mine) filter.author = req.user._id;
+    else if (author) filter.author = author;
 
     const [posts, total] = await Promise.all([
       Post.find(filter)
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
-        .populate('author', 'name username')
+        .populate('author', 'name username avatar')
         .lean(),
       Post.countDocuments(filter),
     ]);
@@ -80,7 +82,7 @@ router.post(
   validate(postBody),
   asyncHandler(async (req, res) => {
     const post = await Post.create({ author: req.user._id, body: req.body.body, likes: [], hidden: false });
-    await post.populate('author', 'name username');
+    await post.populate('author', 'name username avatar');
     res.status(201).json({ status: 'success', data: { post: shapePost(plain(post), req.user._id) } });
   }),
 );
@@ -108,7 +110,7 @@ router.patch(
       post.hidden = req.body.hidden;
     }
     await post.save();
-    await post.populate('author', 'name username');
+    await post.populate('author', 'name username avatar');
     res.json({ status: 'success', data: { post: shapePost(plain(post), req.user._id) } });
   }),
 );
@@ -140,7 +142,7 @@ router.post(
     else likes.splice(idx, 1);
     post.likes = likes;
     await post.save();
-    await post.populate('author', 'name username');
+    await post.populate('author', 'name username avatar');
     res.json({ status: 'success', data: { post: shapePost(plain(post), req.user._id) } });
   }),
 );
