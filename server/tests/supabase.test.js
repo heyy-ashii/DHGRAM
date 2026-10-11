@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 // supabase/migrations/0001_init.sql is applied first. Point TEST_DATABASE_URL at
 // a throwaway database; without it the suite is skipped.
 //
-//   TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/ogea npm test
+//   TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/dhgram npm test
 //
 process.env.NODE_ENV = 'test';
 process.env.ROSTER_CSV = 'AD.NO,NAME,PHONE,EMAIL\n3411,New Student,,\n3412,Chat Student,,\n';
@@ -78,34 +78,14 @@ describeIfDb('DHGRAM on Supabase (Postgres)', () => {
     expect(wrong.status).toBe(400);
   });
 
-  it('runs the admin user lifecycle', async () => {
+  it('seeds an admin account used by the support chat flow', async () => {
     const { User } = await import('../models/User.js');
     await User.create({ name: 'Admin', username: 'admin', email: 'admin@test.dev', password: 'adminpass1', role: 'admin', emailVerified: true });
 
     const agent = request.agent(app);
-    expect((await agent.post('/api/v1/auth/login').send({ identifier: 'admin', password: 'adminpass1' })).status).toBe(200);
-
-    const created = await agent.post('/api/v1/admin/users').send({ name: 'Made', username: 'made', password: 'madepass1' });
-    expect(created.status).toBe(201);
-    const id = created.body.data.user._id;
-    expect(id).toMatch(/^[0-9a-f-]{36}$/);
-
-    const list = await agent.get('/api/v1/admin/users?q=made');
-    expect(list.body.data.users.map((u) => u.username)).toContain('made');
-
-    const edited = await agent.patch(`/api/v1/admin/users/${id}`).send({ name: 'Made 2', role: 'admin' });
-    expect(edited.body.data.user.name).toBe('Made 2');
-    expect(edited.body.data.user.role).toBe('admin');
-
-    const stats = await agent.get('/api/v1/admin/stats');
-    expect(stats.body.data.users).toBeGreaterThanOrEqual(3);
-    expect(stats.body.data.admins).toBe(2);
-
-    await agent.patch(`/api/v1/admin/users/${id}`).send({ status: 'disabled' });
-    expect((await request(app).post('/api/v1/auth/login').send({ identifier: 'made', password: 'madepass1' })).status).toBe(403);
-
-    expect((await agent.delete(`/api/v1/admin/users/${id}`)).status).toBe(204);
-    expect((await agent.get(`/api/v1/admin/users?q=made`)).body.data.users).toHaveLength(0);
+    const login = await agent.post('/api/v1/auth/login').send({ identifier: 'admin', password: 'adminpass1' });
+    expect(login.status).toBe(200);
+    expect(login.body.data.user.role).toBe('admin');
   });
 
   it('runs the chat flow', async () => {

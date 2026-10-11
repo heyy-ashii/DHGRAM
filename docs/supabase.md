@@ -74,8 +74,8 @@ direct Postgres connection, which bypasses RLS.
 skips itself when `TEST_DATABASE_URL` is unset:
 
 ```bash
-TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/ogea npm test
+TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/dhgram npm test
 ```
 
-It covers signup with OTP, the resend cooldown, login and lockout, the admin user
-lifecycle, the posts feed, and the full chat flow.
+It covers signup with OTP, the resend cooldown, login and lockout, the posts feed,
+and the full chat flow.

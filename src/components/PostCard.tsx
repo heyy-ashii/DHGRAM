@@ -1,4 +1,4 @@
-import { Heart, MoreHorizontal, Pencil, Send, Sparkles, Trash2 } from 'lucide-react'
+import { Heart, MoreHorizontal, Pencil, Send, Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import Avatar from './Avatar'
@@ -50,7 +50,7 @@ export function Composer({ onDone, placeholder = 'Share a thought…' }: { onDon
 }
 
 export function PostCard({ post, onChange }: { post: Post; onChange: () => void }) {
-  const { user, isAdmin } = useAuth()
+  const { user } = useAuth()
   const { toast } = useUi()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(post.body)
@@ -58,7 +58,7 @@ export function PostCard({ post, onChange }: { post: Post; onChange: () => void 
   const [busy, setBusy] = useState(false)
 
   const canEdit = post.mine
-  const canDelete = post.mine || isAdmin
+  const canDelete = post.mine
 
   const run = async (fn: () => Promise<unknown>, msg: string) => {
     setBusy(true)
@@ -94,7 +94,7 @@ export function PostCard({ post, onChange }: { post: Post; onChange: () => void 
             </p>
           </div>
         </div>
-        {(canEdit || canDelete || isAdmin) && (
+        {(canEdit || canDelete) && (
           <div className="relative">
             <button className="btn-ghost p-2" onClick={() => setMenu((m) => !m)} aria-label="Post actions">
               <MoreHorizontal className="size-4" />
@@ -106,14 +106,6 @@ export function PostCard({ post, onChange }: { post: Post; onChange: () => void 
                   {canEdit && (
                     <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800" onClick={() => { setEditing(true); setMenu(false) }}>
                       <Pencil className="size-4" /> Edit
-                    </button>
-                  )}
-                  {isAdmin && (
-                    <button
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                      onClick={() => { setMenu(false); run(() => api(`/posts/${post._id}`, { method: 'PATCH', body: { hidden: !post.hidden } }), post.hidden ? 'Post unhidden' : 'Post hidden') }}
-                    >
-                      <Sparkles className="size-4" /> {post.hidden ? 'Unhide' : 'Hide'}
                     </button>
                   )}
                   {canDelete && (

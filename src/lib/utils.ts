@@ -1,6 +1,5 @@
 export { clsx as cn } from 'clsx'
 
-export const CONTACT_EMAIL = 'ogea.sms@gmail.com'
 export const CREATOR_NAME = 'Ashique.Pilassery'
 
 const dateFmt = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })

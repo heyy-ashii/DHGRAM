@@ -1,8 +1,9 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { RequireAdmin, RequireAuth } from './components/Guards'
+import { RequireAuth } from './components/Guards'
 import PublicLayout from './components/PublicLayout'
 import { PageSpinner } from './components/ui'
+import About from './pages/About'
 import Contact from './pages/Contact'
 import Feed from './pages/Feed'
 import Home from './pages/Home'
@@ -12,10 +13,6 @@ import NotFound from './pages/NotFound'
 const Account = lazy(() => import('./pages/Account'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Messages = lazy(() => import('./pages/Messages'))
-const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
-const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
-const AdminUsers = lazy(() => import('./pages/admin/Users'))
-const AdminChats = lazy(() => import('./pages/admin/Chats'))
 
 export default function App() {
   return (
@@ -42,8 +39,8 @@ export default function App() {
           />
           <Route path="u/:username" element={<Profile />} />
           <Route path="contact" element={<Contact />} />
+          <Route path="about" element={<About />} />
           <Route path="discover" element={<Navigate to="/feed" replace />} />
-          <Route path="about" element={<Navigate to="/profile" replace />} />
           <Route path="programs/:id" element={<Navigate to="/feed" replace />} />
           <Route path="search" element={<Navigate to="/feed" replace />} />
           <Route path="login" element={<Login />} />
@@ -56,20 +53,8 @@ export default function App() {
               </RequireAuth>
             }
           />
+          <Route path="admin/*" element={<Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />
-        </Route>
-        <Route
-          path="admin"
-          element={
-            <RequireAdmin>
-              <AdminLayout />
-            </RequireAdmin>
-          }
-        >
-          <Route index element={<AdminDashboard />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="chats" element={<AdminChats />} />
-          <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
       </Routes>
     </Suspense>

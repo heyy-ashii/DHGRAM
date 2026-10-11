@@ -13,11 +13,11 @@ export default function Login({ initialMode = 'login' }: { initialMode?: AuthMod
   const [params] = useSearchParams()
   const next = safeNext(params.get('next'))
 
-  if (user) return <Navigate to={next ?? (user.role === 'admin' ? '/admin' : '/')} replace />
+  if (user) return <Navigate to={next ?? (user.role === 'admin' ? '/messages' : '/')} replace />
 
   return (
     <div className="mx-auto max-w-md px-4 py-12">
-      <AuthPanel initialMode={initialMode} onSuccess={(u) => navigate(next ?? (u.role === 'admin' ? '/admin' : '/'), { replace: true })} />
+      <AuthPanel initialMode={initialMode} onSuccess={(u) => navigate(next ?? (u.role === 'admin' ? '/messages' : '/'), { replace: true })} />
     </div>
   )
 }

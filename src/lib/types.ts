@@ -13,13 +13,6 @@ export interface User {
   createdAt: string
 }
 
-export interface ChatMessage {
-  _id: string
-  body: string
-  senderRole: Role
-  createdAt: string
-}
-
 export interface Post {
   _id: string
   body: string
@@ -40,6 +33,15 @@ export interface PostList {
   data: { posts: Post[] }
 }
 
+export type PeerUser = Pick<User, '_id' | 'name' | 'username'> & { avatar?: string | null }
+
+export interface ChatMessage {
+  _id: string
+  body: string
+  senderRole: Role
+  createdAt: string
+}
+
 export interface Conversation {
   _id: string
   user: Pick<User, '_id' | 'name' | 'username' | 'email'>
@@ -49,8 +51,6 @@ export interface Conversation {
   unreadForAdmin: number
   unreadForUser: number
 }
-
-export type PeerUser = Pick<User, '_id' | 'name' | 'username'> & { avatar?: string | null }
 
 export interface Story {
   _id: string
@@ -73,6 +73,16 @@ export interface MessageThread {
   lastMessage: string
   lastMessageAt: string
   unread: number
+}
+
+export interface GroupSummary {
+  _id: string
+  name: string
+  members: PeerUser[]
+  memberCount: number
+  mine: boolean
+  lastMessage: string
+  lastMessageAt: string
 }
 
 export interface PeerMessage {

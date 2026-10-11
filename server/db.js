@@ -3,8 +3,8 @@ import { config } from './config.js';
 
 mongoose.set('strictQuery', true);
 
-let cached = globalThis.__ogeaMongo;
-if (!cached) cached = globalThis.__ogeaMongo = { conn: null, promise: null };
+let cached = globalThis.__dhgramMongo;
+if (!cached) cached = globalThis.__dhgramMongo = { conn: null, promise: null };
 
 export async function connectDB(uri = config.mongoUri) {
   if (cached.conn && mongoose.connection.readyState === 1) return cached.conn;

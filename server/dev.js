@@ -13,7 +13,7 @@ async function start() {
   } else if (!uri) {
     const { MongoMemoryServer } = await import('mongodb-memory-server');
     const mongod = await MongoMemoryServer.create();
-    uri = mongod.getUri('ogea');
+    uri = mongod.getUri('dhgram');
     process.env.MONGODB_URI = uri;
     console.info('[dev] MONGODB_URI not set - using an in-memory MongoDB (data resets on restart)');
     await connectDB(uri);

@@ -21,6 +21,11 @@ const hydrate = (spec, row) => {
   for (const field of spec.booleans || []) {
     out[field] = out[field] === true || String(out[field]).toLowerCase() === 'true';
   }
+  for (const field of spec.arrays || []) {
+    const value = out[field];
+    if (Array.isArray(value)) continue;
+    out[field] = value ? String(value).split(',').map((v) => v.trim()).filter(Boolean) : [];
+  }
   return out;
 };
 

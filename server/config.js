@@ -21,19 +21,18 @@ export const config = {
   mongoUri: env.MONGODB_URI || '',
   jwtSecret: env.JWT_SECRET || 'dev-only-insecure-secret',
   jwtExpiresIn: env.JWT_EXPIRES_IN || '7d',
-  cookieName: 'ogea_token',
+  cookieName: 'dhgram_token',
   corsOrigins: (env.CORS_ORIGINS || '')
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean),
   appUrl: env.APP_URL || 'http://localhost:5173',
-  contactEmail: env.CONTACT_EMAIL || 'ogea.sms@gmail.com',
   smtp: {
     host: env.SMTP_HOST || '',
     port: Number(env.SMTP_PORT) || 465,
     user: env.SMTP_USER || '',
     pass: env.SMTP_PASS || '',
-    from: env.MAIL_FROM || env.SMTP_USER || 'DHGRAM <ogea.sms@gmail.com>',
+    from: env.MAIL_FROM || env.SMTP_USER || 'DHGRAM <dhgram.app@gmail.com>',
   },
   sheets: {
     apiUrl: env.SHEETS_API_URL || '',

@@ -24,8 +24,11 @@ function startFakeSheet() {
     Posts: [],
     PeerConversations: [],
     PeerMessages: [],
+    Groups: [],
+    GroupMembers: [],
+    GroupMessages: [],
   };
-  const JSON_COLUMNS = { likes: true };
+  const JSON_COLUMNS = { likes: true, members: true };
   const BOOLEAN_COLUMNS = { emailVerified: true, hidden: true };
 
   const eq = (a, b) => {
@@ -242,31 +245,13 @@ describe('DHGRAM on Google Sheets only', () => {
     expect((await request(app).post('/api/v1/auth/signup').send({ name: 'New Student', admissionNo: '9999' })).status).toBe(403);
   });
 
-  it('runs the admin user lifecycle', async () => {
-    // Seed an admin directly through the model.
+  it('seeds an admin account used by the support chat flow', async () => {
     const { User } = await import('../models/User.js');
     await User.create({ name: 'Admin', username: 'admin', email: 'admin@test.dev', password: 'adminpass1', role: 'admin', emailVerified: true });
 
-    const { agent } = await adminLogin();
-    expect((await agent.get('/api/v1/admin/users')).status).toBe(200);
-
-    const created = await agent.post('/api/v1/admin/users').send({ name: 'Made', username: 'made', password: 'madepass1' });
-    expect(created.status).toBe(201);
-    const id = created.body.data.user._id;
-    expect(id).toMatch(/^[0-9a-f-]{36}$/);
-
-    const list = await agent.get('/api/v1/admin/users?q=made');
-    expect(list.body.data.users.map((u) => u.username)).toContain('made');
-
-    const edited = await agent.patch(`/api/v1/admin/users/${id}`).send({ name: 'Made 2', role: 'admin' });
-    expect(edited.body.data.user.name).toBe('Made 2');
-    expect(edited.body.data.user.role).toBe('admin');
-
-    await agent.patch(`/api/v1/admin/users/${id}`).send({ status: 'disabled' });
-    const login = await request(app).post('/api/v1/auth/login').send({ identifier: 'made', password: 'madepass1' });
-    expect(login.status).toBe(403);
-
-    expect((await agent.delete(`/api/v1/admin/users/${id}`)).status).toBe(204);
+    const { res } = await adminLogin();
+    expect(res.status).toBe(200);
+    expect(res.body.data.user.role).toBe('admin');
   });
 
   it('runs the chat flow', async () => {
@@ -374,5 +359,36 @@ describe('DHGRAM on Google Sheets only', () => {
     expect(thread.body.data.messages.map((m) => m.body)).toEqual(['sheet hey']);
     expect(thread.body.data.messages[0].mine).toBe(false);
     expect((await two.get('/api/v1/messages/unread')).body.data.unread).toBe(0);
+  });
+
+  it('runs the group chat flow through the sheet', async () => {
+    const { User } = await import('../models/User.js');
+    await User.create({ name: 'Group One', username: 'groupone', password: 'groupone1', status: 'active' });
+    await User.create({ name: 'Group Two', username: 'grouptwo', password: 'grouptwo1', status: 'active' });
+    const one = request.agent(app);
+    const two = request.agent(app);
+    await one.post('/api/v1/auth/login').send({ identifier: 'groupone', password: 'groupone1' });
+    await two.post('/api/v1/auth/login').send({ identifier: 'grouptwo', password: 'grouptwo1' });
+
+    const dir = await one.get('/api/v1/messages/directory?q=grouptwo');
+    const twoId = dir.body.data.users.find((u) => u.username === 'grouptwo')._id;
+
+    const created = await one.post('/api/v1/groups').send({ name: 'Sheet squad', memberIds: [twoId] });
+    expect(created.status).toBe(201);
+    expect(created.body.data.group.memberCount).toBe(2);
+    const id = created.body.data.group._id;
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
+
+    // The membership list round-trips through the sheet's JSON column.
+    expect((await two.get('/api/v1/groups')).body.data.groups.map((g) => g._id)).toContain(id);
+    expect((await two.get(`/api/v1/groups/${id}`)).body.data.group.members.map((m) => m.username)).toEqual(
+      expect.arrayContaining(['groupone', 'grouptwo']),
+    );
+
+    await two.post(`/api/v1/groups/${id}/messages`).send({ body: 'sheet group hey' });
+    const thread = await one.get(`/api/v1/groups/${id}`);
+    expect(thread.body.data.messages.map((m) => m.body)).toEqual(['sheet group hey']);
+    const list = await one.get('/api/v1/groups');
+    expect(list.body.data.groups.find((g) => g._id === id).lastMessage).toBe('sheet group hey');
   });
 });
