@@ -1,6 +1,6 @@
-import { LayoutDashboard, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Spinner } from '../components/ui'
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
@@ -10,8 +10,8 @@ import { usePageMeta } from '../lib/usePageMeta'
 
 export default function Account() {
   usePageMeta('My Account')
-  const { user, setUser, logout, isAdmin } = useAuth()
-  const { toast, setChatOpen } = useUi()
+  const { user, setUser, logout } = useAuth()
+  const { toast } = useUi()
   const navigate = useNavigate()
   const [profile, setProfile] = useState({ name: user!.name, username: user!.username })
   const [pw, setPw] = useState({ currentPassword: '', password: '' })
@@ -54,8 +54,6 @@ export default function Account() {
           <p className="text-sm text-neutral-500">{user!.email ?? `@${user!.username}`}</p>
         </div>
         <div className="flex gap-2">
-          {isAdmin && <Link to="/admin" className="btn-dark"><LayoutDashboard className="size-4" /> Admin</Link>}
-          <button className="btn-outline" onClick={() => setChatOpen(true)}>Chat with Admin</button>
           <button
             className="btn-ghost"
             onClick={async () => {

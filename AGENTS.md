@@ -4,7 +4,8 @@
 
 DHGRAM – "Share & Message". A chat + thought-sharing platform: a home page with
 24-hour Stories and a public Thoughts feed, one-to-one student Messages, profiles
-with avatars, and a Chat-with-Admin panel. React (Vite)
+with avatars, and a Chat-with-Admin support thread that lives inside Messages.
+React (Vite)
 frontend + Express API. Frontend in `src/`, API in `server/`, Vercel serverless
 entry in `api/index.js`.
 
@@ -70,6 +71,18 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
 - The `/messages` sidebar lists **all other active students** (from
   `/messages/directory`) on top of existing conversations; picking someone with
   no thread calls `/messages/start` and opens it.
+
+## Chat with Admin (support)
+
+- `server/routes/chat.js` + `server/models/Chat.js` (Conversation/Message) back the
+  student↔admin support thread. Students use `GET/POST /chat/me*`; admins use
+  `/chat/conversations*` (guarded by `restrictTo('admin')`).
+- The UI for it lives **only inside the Messages page**: `AdminChat` (student view)
+  and `SupportInbox` (admin view) in `src/components/`. There is no `/admin` route
+  and no floating chat widget — `Messages.tsx` branches on `isAdmin` to render the
+  right side. Admins land on `/messages` after login.
+- The daily cleanup cron (`vercel.json` → `/api/v1/chat/cron/cleanup`) trims both
+  peer and support messages.
 
 ## Stories & profiles
 

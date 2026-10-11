@@ -1,7 +1,6 @@
-import { MessageCircle, MessageSquare, Send, Timer, Users } from 'lucide-react'
+import { MessageSquare, Send, Timer, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useUi } from '../context/UiContext'
 import { CREATOR_NAME } from '../lib/utils'
 import BrandName from './BrandName'
 import Logo from './Logo'
@@ -15,7 +14,6 @@ const highlights = [
 ]
 
 export default function Footer() {
-  const { setChatOpen } = useUi()
   const { user } = useAuth()
   return (
     <footer className="border-t border-neutral-200 bg-white pb-20 pt-12 md:pb-10 dark:border-neutral-800 dark:bg-neutral-950">
@@ -34,11 +32,11 @@ export default function Footer() {
           </ul>
         </div>
         <div>
-          <h3 className="mb-3 text-sm font-semibold">Chat</h3>
+          <h3 className="mb-3 text-sm font-semibold">Explore</h3>
           <ul className="space-y-2 text-sm text-neutral-500">
             <li><Link className="hover:text-brand" to="/messages">Messages</Link></li>
             <li><Link className="hover:text-brand" to="/feed">Thoughts</Link></li>
-            <li><Link className="hover:text-brand" to="/contact">Contact</Link></li>
+            <li><Link className="hover:text-brand" to="/about">About</Link></li>
           </ul>
         </div>
         <div>
@@ -47,9 +45,6 @@ export default function Footer() {
             <Link to={user ? '/messages' : '/login'} className="btn-primary justify-start">
               <Send className="size-4" /> {user ? 'Open Messages' : 'Log in to chat'}
             </Link>
-            <button type="button" className="btn-outline justify-start" onClick={() => setChatOpen(true)}>
-              <MessageCircle className="size-4" /> Chat with Admin
-            </button>
           </div>
         </div>
       </div>

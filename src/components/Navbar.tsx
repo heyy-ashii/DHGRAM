@@ -1,4 +1,4 @@
-import { Home, LayoutDashboard, LogIn, LogOut, MessageCircle, MessageSquare, Moon, Sun, User as UserIcon, type LucideIcon } from 'lucide-react'
+import { Home, LogIn, LogOut, MessageCircle, MessageSquare, Moon, Sun, User as UserIcon, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import Avatar from './Avatar'
@@ -17,10 +17,9 @@ const links: NavItem[] = [
 
 export default function Navbar() {
   const { theme, toggleTheme } = useUi()
-  const { user, isAdmin, logout } = useAuth()
+  const { user, logout } = useAuth()
   const [menu, setMenu] = useState(false)
-  const base = isAdmin ? links.filter((l) => l.key !== 'messages') : links
-  const navItems: NavItem[] = [...base, { key: 'profile', to: user ? `/u/${user.username}` : '/login', label: 'Profile', icon: UserIcon }]
+  const navItems: NavItem[] = [...links, { key: 'profile', to: user ? `/u/${user.username}` : '/login', label: 'Profile', icon: UserIcon }]
 
   return (
     <>
@@ -48,11 +47,6 @@ export default function Navbar() {
             <button className="btn-ghost p-2" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
               {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </button>
-            {isAdmin && (
-              <Link to="/admin" className="btn-outline hidden px-3 sm:inline-flex">
-                <LayoutDashboard className="size-4" /> Admin
-              </Link>
-            )}
             {user ? (
               <div className="relative">
                 <button className="rounded-full" onClick={() => setMenu((m) => !m)} aria-label="Account menu">

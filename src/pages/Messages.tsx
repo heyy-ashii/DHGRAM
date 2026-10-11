@@ -1,8 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, MessageSquarePlus, Send } from 'lucide-react'
+import { ArrowLeft, MessageSquarePlus, Send, ShieldQuestion } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import AdminChat from '../components/AdminChat'
 import Avatar from '../components/Avatar'
+import SupportInbox from '../components/SupportInbox'
 import { EmptyState, Modal, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
@@ -11,6 +13,8 @@ import type { MessageThread } from '../lib/types'
 import { usePageMeta } from '../lib/usePageMeta'
 import { useMessageThread, useMessageThreads, useStudentDirectory } from '../lib/queries'
 import { cn, formatShort, formatTime } from '../lib/utils'
+
+const ADMIN_KEY = 'admin'
 
 function ThreadView({ id, onBack }: { id: string; onBack: () => void }) {
   const qc = useQueryClient()
@@ -125,14 +129,14 @@ export default function Messages() {
   usePageMeta('Messages')
   const qc = useQueryClient()
   const { toast } = useUi()
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   const [params] = useSearchParams()
   const [selected, setSelected] = useState<string | null>(() => params.get('c'))
   const [picker, setPicker] = useState(false)
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState<'all' | 'unread'>('all')
-  const { data: threads, isLoading } = useMessageThreads(Boolean(user))
-  const { data: directory, isLoading: dirLoading } = useStudentDirectory(search, Boolean(user))
+  const { data: threads, isLoading } = useMessageThreads(Boolean(user) && !isAdmin)
+  const { data: directory, isLoading: dirLoading } = useStudentDirectory(search, Boolean(user) && !isAdmin)
 
   const start = useMutation({
     mutationFn: (userId: string) => api<{ data: { conversation: MessageThread } }>('/messages/start', { method: 'POST', body: { userId } }),
@@ -169,6 +173,24 @@ export default function Messages() {
     )
   }
 
+  if (isAdmin) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-0 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4">
+          <div className="flex items-center justify-between gap-3 px-4 pb-3 sm:px-0">
+            <div>
+              <h1 className="text-2xl font-extrabold">Messages</h1>
+              <p className="mt-1 text-sm text-neutral-500">Reply to students who message the admin team.</p>
+            </div>
+          </div>
+          <div className="card grid min-h-0 flex-1 overflow-hidden sm:rounded-2xl md:grid-cols-[340px_1fr]">
+            <SupportInbox selected={selected} onSelect={setSelected} onBack={() => setSelected(null)} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-0 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4">
@@ -177,9 +199,14 @@ export default function Messages() {
             <h1 className="text-2xl font-extrabold">Messages</h1>
             <p className="mt-1 text-sm text-neutral-500">Chat privately with other students.</p>
           </div>
-          <button className="btn-primary px-3" onClick={() => setPicker(true)}>
-            <MessageSquarePlus className="size-4" /> New
-          </button>
+          <div className="flex items-center gap-2">
+            <button className="btn-outline px-3" onClick={() => setSelected(ADMIN_KEY)}>
+              <ShieldQuestion className="size-4" /> Support
+            </button>
+            <button className="btn-primary px-3" onClick={() => setPicker(true)}>
+              <MessageSquarePlus className="size-4" /> New
+            </button>
+          </div>
         </div>
 
         <div className="card grid min-h-0 flex-1 overflow-hidden sm:rounded-2xl md:grid-cols-[340px_1fr]">
@@ -199,6 +226,18 @@ export default function Messages() {
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
+            <button
+              onClick={() => setSelected(ADMIN_KEY)}
+              className={cn('flex w-full items-center gap-3 border-b border-neutral-100 px-4 py-3 text-left hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-800/40', selected === ADMIN_KEY && 'bg-blue-50 dark:bg-blue-950/40')}
+            >
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand/10 text-brand">
+                <ShieldQuestion className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <span className="truncate font-semibold">Support</span>
+                <span className="block truncate text-sm text-neutral-500">Chat with the admin team</span>
+              </div>
+            </button>
             {isLoading || dirLoading ? (
               <PageSpinner />
             ) : list.length === 0 ? (
@@ -239,7 +278,9 @@ export default function Messages() {
           </div>
         </div>
         <div className={cn('min-h-0', !selected && 'hidden md:block')}>
-          {selected ? (
+          {selected === ADMIN_KEY ? (
+            <AdminChat onBack={() => setSelected(null)} />
+          ) : selected ? (
             <ThreadView key={selected} id={selected} onBack={() => setSelected(null)} />
           ) : (
             <div className="grid h-full place-items-center p-8 text-center text-sm text-neutral-500">

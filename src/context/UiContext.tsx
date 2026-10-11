@@ -6,8 +6,6 @@ type Toast = { id: number; message: string; tone: 'success' | 'error' }
 interface UiValue {
   theme: Theme
   toggleTheme: () => void
-  chatOpen: boolean
-  setChatOpen: (open: boolean) => void
   toasts: Toast[]
   toast: (message: string, tone?: Toast['tone']) => void
 }
@@ -18,13 +16,12 @@ export function UiProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() =>
     document.documentElement.classList.contains('dark') ? 'dark' : 'light',
   )
-  const [chatOpen, setChatOpen] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
     try {
-      localStorage.setItem('ogea-theme', theme)
+      localStorage.setItem('dhgram-theme', theme)
     } catch {
       /* storage unavailable */
     }
@@ -40,12 +37,10 @@ export function UiProvider({ children }: { children: ReactNode }) {
     () => ({
       theme,
       toggleTheme: () => setTheme((t) => (t === 'dark' ? 'light' : 'dark')),
-      chatOpen,
-      setChatOpen,
       toasts,
       toast,
     }),
-    [theme, chatOpen, toasts, toast],
+    [theme, toasts, toast],
   )
 
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>

@@ -1,10 +1,10 @@
-import { Code2, LogOut, Mail, MessageCircle, MessageSquare, Timer, Users } from 'lucide-react'
+import { Code2, LogOut, MessageSquare, Timer, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import AuthPanel from './AuthPanel'
 import BrandName from './BrandName'
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
-import { CONTACT_EMAIL, CREATOR_NAME } from '../lib/utils'
+import { CREATOR_NAME } from '../lib/utils'
 
 const credits = [{ name: CREATOR_NAME, role: 'Founder · Design & Full-stack Development', icon: Code2 }]
 
@@ -14,16 +14,15 @@ const steps = [
   { icon: Timer, title: 'Stays fresh', text: 'Messages clear automatically after 30 days, so nothing piles up.' },
 ]
 
-// The former About page, now shown in the profile's three-dot panel.
+// Shared About content: rendered on the /about page and in the profile's three-dot panel.
 export default function AboutPanel() {
   const { user, logout } = useAuth()
-  const { setChatOpen, toast } = useUi()
+  const { toast } = useUi()
 
   return (
     <div className="space-y-8">
       <section>
-        <h2 className="text-xl font-bold">About <BrandName /></h2>
-        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
           <BrandName /> is a simple space for students to share thoughts and message each other, one-to-one.
         </p>
       </section>
@@ -61,21 +60,6 @@ export default function AboutPanel() {
       </section>
 
       <section className="border-t border-neutral-200 pt-6 dark:border-neutral-800">
-        <h3 className="font-bold">Need help or have feedback?</h3>
-        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-          Send us an email or chat with the admin team and we will get back to you.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <a className="btn-outline" href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('DHGRAM feedback')}`}>
-            <Mail className="size-4" /> Email us
-          </a>
-          <button className="btn-primary" onClick={() => setChatOpen(true)}>
-            <MessageCircle className="size-4" /> Chat with Admin
-          </button>
-        </div>
-      </section>
-
-      <section className="border-t border-neutral-200 pt-6 dark:border-neutral-800">
         {user ? (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -84,7 +68,6 @@ export default function AboutPanel() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Link to="/account" className="btn-outline">My account</Link>
-              {user.role === 'admin' && <Link to="/admin" className="btn-dark">Admin dashboard</Link>}
               <button
                 className="btn-ghost"
                 onClick={async () => {

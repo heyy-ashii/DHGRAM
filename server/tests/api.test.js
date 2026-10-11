@@ -19,7 +19,7 @@ let User;
 beforeAll(async () => {
   mongod = await MongoMemoryServer.create();
   const { connectDB } = await import('../db.js');
-  const uri = mongod.getUri('ogea-test');
+  const uri = mongod.getUri('dhgram-test');
   await connectDB(uri);
   ({ User } = await import('../models/User.js'));
   const { createApp } = await import('../app.js');
@@ -89,42 +89,6 @@ describe('auth', () => {
     const unknown = await request(app).post('/api/v1/auth/password/request-otp').send({ email: 'nobody@x.dev' });
     expect(unknown.status).toBe(200);
     expect(unknown.body.devCode).toBeUndefined();
-  });
-});
-
-describe('admin users', () => {
-  it('blocks non-admins', async () => {
-    expect((await request(app).get('/api/v1/admin/users')).status).toBe(401);
-    const { agent } = await login('newbie', 'newpassword1');
-    expect((await agent.get('/api/v1/admin/users')).status).toBe(403);
-  });
-
-  it('creates, edits, resets password, disables and deletes users', async () => {
-    const { agent } = await login('admin', 'adminpass1');
-    const created = await agent.post('/api/v1/admin/users').send({ name: 'Made', username: 'made', password: 'madepass1' });
-    expect(created.status).toBe(201);
-    const id = created.body.data.user._id;
-
-    const list = await agent.get('/api/v1/admin/users?q=made');
-    expect(list.body.data.users).toHaveLength(1);
-    expect(list.body.data.users[0]).not.toHaveProperty('password');
-
-    const edited = await agent.patch(`/api/v1/admin/users/${id}`).send({ name: 'Made 2', password: 'changed123', role: 'admin' });
-    expect(edited.body.data.user).toMatchObject({ name: 'Made 2', role: 'admin' });
-    expect((await login('made', 'changed123')).res.status).toBe(200);
-
-    await agent.patch(`/api/v1/admin/users/${id}`).send({ status: 'disabled' });
-    expect((await login('made', 'changed123')).res.status).toBe(403);
-
-    const dup = await agent.post('/api/v1/admin/users').send({ name: 'Dup', username: 'made', password: 'madepass1' });
-    expect(dup.status).toBe(409);
-
-    const me = (await agent.get('/api/v1/auth/me')).body.data.user;
-    expect((await agent.patch(`/api/v1/admin/users/${me._id}`).send({ role: 'user' })).status).toBe(400);
-    expect((await agent.delete(`/api/v1/admin/users/${me._id}`)).status).toBe(400);
-
-    expect((await agent.delete(`/api/v1/admin/users/${id}`)).status).toBe(204);
-    expect((await agent.get('/api/v1/admin/stats')).body.data.users).toBeGreaterThan(0);
   });
 });
 

@@ -56,7 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await api('/auth/logout', { method: 'POST' })
         setUser(null)
         qc.removeQueries({ queryKey: ['chat'] })
-        qc.removeQueries({ queryKey: ['admin'] })
       },
     }
   }, [user, isLoading, setUser, qc])

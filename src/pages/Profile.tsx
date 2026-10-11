@@ -17,7 +17,7 @@ import { useMyStories, usePosts, useProfile } from '../lib/queries'
 
 export default function Profile() {
   const { username } = useParams<{ username: string }>()
-  const { user, setUser, isAdmin } = useAuth()
+  const { user, setUser } = useAuth()
   const qc = useQueryClient()
   const { toast } = useUi()
   const navigate = useNavigate()
@@ -156,11 +156,6 @@ export default function Profile() {
                         <Link to="/account" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800" onClick={() => setMenu(false)}>
                           Account settings
                         </Link>
-                        {isAdmin && (
-                          <Link to="/admin" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800" onClick={() => setMenu(false)}>
-                            Admin dashboard
-                          </Link>
-                        )}
                         <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-neutral-100 dark:hover:bg-neutral-800" onClick={() => { setMenu(false); openEditor() }}>
                           About <BrandName />
                         </button>
