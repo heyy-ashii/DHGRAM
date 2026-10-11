@@ -5,7 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import AboutPanel from '../components/AboutPanel'
 import Avatar from '../components/Avatar'
 import BrandName from '../components/BrandName'
-import { Composer, PostCard } from '../components/PostCard'
+import { PostCard } from '../components/PostCard'
 import { EmptyState, ErrorState, Modal, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
@@ -208,17 +208,12 @@ export default function Profile() {
 
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-bold">{isMe ? 'Your thoughts' : 'Thoughts'}</h2>
-        {isMe && (
-          <div className="mb-4">
-            <Composer onDone={() => refetch()} />
-          </div>
-        )}
         {postsLoading ? (
           <PageSpinner />
         ) : postsError ? (
           <ErrorState message={postsError.message} onRetry={() => refetch()} />
         ) : thoughts.length === 0 ? (
-          <EmptyState title="No thoughts yet">{isMe ? 'Share your first thought above.' : 'Nothing shared yet.'}</EmptyState>
+          <EmptyState title="No thoughts yet">Nothing shared yet.</EmptyState>
         ) : (
           <div className="flex flex-col gap-4">
             {thoughts.map((p) => (

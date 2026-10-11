@@ -421,3 +421,72 @@ describe('profile', () => {
     expect(mine.body.data.posts.every((p) => p.author._id === meId)).toBe(true);
   });
 });
+
+describe('admin', () => {
+  beforeAll(async () => {
+    const { User } = await import('../models/User.js');
+    await User.create({ name: 'Plain User', username: 'plainuser', password: 'plainpass1' });
+  });
+
+  it('is closed to guests and non-admins', async () => {
+    expect((await request(app).get('/api/v1/admin/stats')).status).toBe(401);
+    expect((await request(app).get('/api/v1/admin/users')).status).toBe(401);
+    const { agent: user } = await login('plainuser', 'plainpass1');
+    expect((await user.get('/api/v1/admin/stats')).status).toBe(403);
+    expect((await user.get('/api/v1/admin/users')).status).toBe(403);
+    expect((await user.post('/api/v1/admin/users').send({ name: 'X', username: 'xxxx', password: 'password1' })).status).toBe(403);
+  });
+
+  it('reports dashboard counters', async () => {
+    const { agent: admin } = await login('admin', 'adminpass1');
+    const res = await admin.get('/api/v1/admin/stats');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ admins: 1 });
+    expect(res.body.data.users).toBeGreaterThan(0);
+  });
+
+  it('lists, searches and filters users', async () => {
+    const { agent: admin } = await login('admin', 'adminpass1');
+    const all = await admin.get('/api/v1/admin/users');
+    expect(all.status).toBe(200);
+    expect(all.body.data.users.some((u) => u.username === 'admin')).toBe(true);
+    expect(all.body.data.users[0]).not.toHaveProperty('password');
+
+    const searched = await admin.get('/api/v1/admin/users?q=plainuser');
+    expect(searched.body.data.users.map((u) => u.username)).toEqual(['plainuser']);
+
+    const adminsOnly = await admin.get('/api/v1/admin/users?role=admin');
+    expect(adminsOnly.body.data.users.every((u) => u.role === 'admin')).toBe(true);
+  });
+
+  it('creates, updates, disables and deletes a user', async () => {
+    const { agent: admin } = await login('admin', 'adminpass1');
+    const created = await admin
+      .post('/api/v1/admin/users')
+      .send({ name: 'Managed User', username: 'managed', email: 'managed@x.dev', password: 'managed123' });
+    expect(created.status).toBe(201);
+    const id = created.body.data.user._id;
+    expect(created.body.data.user).toMatchObject({ username: 'managed', role: 'user', status: 'active' });
+
+    // A duplicate username is rejected.
+    expect(
+      (await admin.post('/api/v1/admin/users').send({ name: 'Dup', username: 'managed', password: 'managed123' })).status,
+    ).toBe(409);
+
+    const promoted = await admin.patch(`/api/v1/admin/users/${id}`).send({ role: 'admin', status: 'disabled' });
+    expect(promoted.body.data.user).toMatchObject({ role: 'admin', status: 'disabled' });
+
+    // The admin cannot demote or disable themselves.
+    const meId = (await admin.get('/api/v1/auth/me')).body.data.user._id;
+    expect((await admin.patch(`/api/v1/admin/users/${meId}`).send({ role: 'user' })).status).toBe(400);
+    expect((await admin.patch(`/api/v1/admin/users/${meId}`).send({ status: 'disabled' })).status).toBe(400);
+
+    // Deleting removes the account and the content it owned.
+    const { Post } = await import('../models/Post.js');
+    await Post.create({ author: id, body: 'will be deleted' });
+    expect((await admin.delete(`/api/v1/admin/users/${id}`)).status).toBe(204);
+    expect(await Post.countDocuments({ author: id })).toBe(0);
+    expect((await admin.get('/api/v1/admin/users?q=managed')).body.data.users).toHaveLength(0);
+    expect((await admin.delete(`/api/v1/admin/users/${meId}`)).status).toBe(400);
+  });
+});
