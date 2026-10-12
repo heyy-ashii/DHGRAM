@@ -11,6 +11,7 @@ import { User } from '../models/User.js';
 import { findStudentByRegNo, initialPassword, usernameFromName } from '../roster.js';
 import { AppError, asyncHandler } from '../utils/AppError.js';
 import { sendOtpEmail } from '../utils/email.js';
+import { isSuspended, liftIfExpired } from '../utils/suspension.js';
 import { clearAuth, sendAuth } from '../utils/tokens.js';
 
 const router = Router();
@@ -130,7 +131,19 @@ router.post(
       }
       throw new AppError('Incorrect username or password', 401);
     }
-    if (user.status !== 'active') throw new AppError('This account has been disabled. Contact the admin.', 403);
+    if (user.status !== 'active') {
+      // Lift a suspension that has run out, then admit them; a permanent disable
+      // or a still-running suspension stays shut.
+      await liftIfExpired(user);
+      if (user.status !== 'active') {
+        throw new AppError(
+          isSuspended(user)
+            ? `This account is suspended until ${new Date(user.suspendedUntil).toLocaleString()}. Contact the admin.`
+            : 'This account has been disabled. Contact the admin.',
+          403,
+        );
+      }
+    }
     user.failedLoginAttempts = 0;
     user.lockUntil = undefined;
     user.lastLoginAt = new Date();

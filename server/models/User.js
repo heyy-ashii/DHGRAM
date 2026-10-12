@@ -14,7 +14,12 @@ const userSchema = new mongoose.Schema(
     // enforced here.
     password: { type: String, required: true, minlength: 1, select: false },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    // `status` stays a two-value switch for compatibility with every datastore.
+    // A suspension is a `disabled` user with a future `suspendedUntil`; when that
+    // time passes the account is lifted back to `active`. A permanent disable
+    // (a "dismiss") is `disabled` with no `suspendedUntil`.
     status: { type: String, enum: ['active', 'disabled'], default: 'active' },
+    suspendedUntil: Date,
     avatar: { type: String, default: '' },
     emailVerified: { type: Boolean, default: false },
     passwordChangedAt: Date,
@@ -48,6 +53,7 @@ userSchema.methods.toPublicJSON = function toPublicJSON() {
     email: this.email ?? null,
     role: this.role,
     status: this.status,
+    suspendedUntil: this.suspendedUntil ?? null,
     avatar: this.avatar ?? null,
     emailVerified: this.emailVerified,
     lastLoginAt: this.lastLoginAt ?? null,

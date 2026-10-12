@@ -1,4 +1,4 @@
-import { MessageCircle, ShieldCheck, Users } from 'lucide-react'
+import { Flag, MessageCircle, ShieldCheck, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { PageSpinner } from '../../components/ui'
 import { usePageMeta } from '../../lib/usePageMeta'
@@ -9,14 +9,15 @@ export default function Dashboard() {
   const { data, isLoading } = useStats()
   if (isLoading || !data) return <PageSpinner />
   const cards = [
-    { label: 'Users', value: data.users, sub: `${data.disabled} disabled`, icon: Users, to: '/admin/users' },
+    { label: 'Users', value: data.users, sub: `${data.disabled} disabled · ${data.suspended} suspended`, icon: Users, to: '/admin/users' },
+    { label: 'Reports', value: data.openReports, sub: 'awaiting review', icon: Flag, to: '/admin/reports' },
     { label: 'Admins', value: data.admins, sub: 'with full access', icon: ShieldCheck, to: '/admin/users?role=admin' },
     { label: 'Open chats', value: data.openChats, sub: `${data.unreadMessages} unread messages`, icon: MessageCircle, to: '/messages' },
   ]
   return (
     <div>
       <h1 className="text-2xl font-bold">Dashboard</h1>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((c) => (
           <Link key={c.label} to={c.to} className="card p-5 transition hover:border-brand">
             <c.icon className="size-6 text-brand" />
@@ -28,6 +29,7 @@ export default function Dashboard() {
       </div>
       <div className="mt-8 flex flex-wrap gap-3">
         <Link to="/admin/users?new=1" className="btn-primary">Add user</Link>
+        <Link to="/admin/reports" className="btn-outline">Review reports</Link>
         <Link to="/messages" className="btn-outline">Open inbox</Link>
       </div>
     </div>

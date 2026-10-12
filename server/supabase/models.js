@@ -15,6 +15,7 @@ const userSpec = {
     password: 'password',
     role: 'role',
     status: 'status',
+    suspendedUntil: 'suspended_until',
     avatar: 'avatar',
     emailVerified: 'email_verified',
     passwordChangedAt: 'password_changed_at',
@@ -24,7 +25,7 @@ const userSpec = {
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   },
-  dates: dateFields(['passwordChangedAt', 'lastLoginAt', 'lockUntil']),
+  dates: dateFields(['passwordChangedAt', 'lastLoginAt', 'lockUntil', 'suspendedUntil']),
   numbers: ['failedLoginAttempts'],
   booleans: ['emailVerified'],
   defaults: { role: 'user', status: 'active', failedLoginAttempts: 0, emailVerified: false },
@@ -36,6 +37,7 @@ const userSpec = {
     email: u.email ?? null,
     role: u.role,
     status: u.status,
+    suspendedUntil: u.suspendedUntil ?? null,
     avatar: u.avatar ?? null,
     emailVerified: Boolean(u.emailVerified),
     lastLoginAt: u.lastLoginAt ?? null,
@@ -221,6 +223,28 @@ const storyViewSpec = {
   publicJSON: (v) => ({ ...v }),
 };
 
+const reportSpec = {
+  name: 'Reports',
+  table: 'app_reports',
+  columns: {
+    reporter: 'reporter_id',
+    reporterName: 'reporter_name',
+    kind: 'kind',
+    targetId: 'target_id',
+    targetLabel: 'target_label',
+    reason: 'reason',
+    details: 'details',
+    status: 'status',
+    handledBy: 'handled_by',
+    handledAt: 'handled_at',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+  },
+  dates: dateFields(['handledAt']),
+  defaults: { reason: 'other', details: '', status: 'open', targetLabel: '' },
+  publicJSON: (r) => ({ ...r }),
+};
+
 export const SupabaseUser = createCollection(userSpec);
 export const SupabaseOtp = createCollection(otpSpec);
 export const SupabaseConversation = createCollection(conversationSpec);
@@ -233,6 +257,7 @@ export const SupabaseGroupMember = createCollection(groupMemberSpec);
 export const SupabaseGroupMessage = createCollection(groupMessageSpec);
 export const SupabaseStory = createCollection(storySpec);
 export const SupabaseStoryView = createCollection(storyViewSpec);
+export const SupabaseReport = createCollection(reportSpec);
 
 conversationSpec.populates = { user: SupabaseUser };
 postSpec.populates = { author: SupabaseUser };

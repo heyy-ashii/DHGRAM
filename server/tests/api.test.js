@@ -550,3 +550,92 @@ describe('admin', () => {
     expect((await admin.delete(`/api/v1/admin/users/${meId}`)).status).toBe(400);
   });
 });
+
+describe('reports and moderation', () => {
+  it('requires a login to report and rejects reporting yourself', async () => {
+    const { agent: user } = await login('plainuser', 'plainpass1');
+    const meId = (await user.get('/api/v1/auth/me')).body.data.user._id;
+    expect((await request(app).post('/api/v1/reports').send({ kind: 'user', targetId: meId })).status).toBe(401);
+    expect((await user.post('/api/v1/reports').send({ kind: 'user', targetId: meId })).status).toBe(400);
+  });
+
+  it('lets a student report a thought and an admin resolve it by removing the content', async () => {
+    const { agent: author } = await login('newbie', 'newpassword1');
+    const post = (await author.post('/api/v1/posts').send({ body: 'reportable thought' })).body.data.post;
+
+    const { agent: reporter } = await login('plainuser', 'plainpass1');
+    const created = await reporter.post('/api/v1/reports').send({ kind: 'post', targetId: post._id, reason: 'spam', details: 'noise' });
+    expect(created.status).toBe(201);
+    expect(created.body.data.report).toMatchObject({ kind: 'post', reason: 'spam', status: 'open' });
+    const reportId = created.body.data.report._id;
+
+    // The same reporter cannot file the same report twice while it is open.
+    expect((await reporter.post('/api/v1/reports').send({ kind: 'post', targetId: post._id })).status).toBe(409);
+
+    // Non-admins cannot read the queue.
+    expect((await reporter.get('/api/v1/admin/reports')).status).toBe(403);
+
+    const { agent: admin } = await login('admin', 'adminpass1');
+    const queue = await admin.get('/api/v1/admin/reports');
+    expect(queue.body.data.reports.map((r) => r._id)).toContain(reportId);
+
+    const resolved = await admin.patch(`/api/v1/admin/reports/${reportId}`).send({ action: 'resolve', removeContent: true });
+    expect(resolved.status).toBe(200);
+    expect(resolved.body.data.report.status).toBe('resolved');
+
+    const { Post } = await import('../models/Post.js');
+    expect(await Post.countDocuments({ _id: post._id })).toBe(0);
+    expect((await admin.patch(`/api/v1/admin/reports/${reportId}`).send({ action: 'resolve' })).status).toBe(400);
+  });
+
+  it('lets a student report a person and a story', async () => {
+    const { User } = await import('../models/User.js');
+    await User.create({ name: 'Report Target', username: 'reporttarget', password: 'targetpass1' });
+    const { agent: reporter } = await login('plainuser', 'plainpass1');
+    const { agent: author } = await login('reporttarget', 'targetpass1');
+
+    const profile = await request(app).get('/api/v1/auth/users/reporttarget');
+    const targetId = profile.body.data.user._id;
+    const person = await reporter.post('/api/v1/reports').send({ kind: 'user', targetId, reason: 'harassment' });
+    expect(person.status).toBe(201);
+    expect(person.body.data.report.targetLabel).toContain('reporttarget');
+
+    const story = (await author.post('/api/v1/stories').send({ imageUrl: 'data:image/png;base64,AAAA', caption: 'spammy' })).body.data.story;
+    const storyReport = await reporter.post('/api/v1/reports').send({ kind: 'story', targetId: story._id, reason: 'nudity' });
+    expect(storyReport.status).toBe(201);
+    expect(storyReport.body.data.report.targetLabel).toContain('spammy');
+  });
+
+  it('suspends a user for a time and dismisses them, then reinstates', async () => {
+    const { User } = await import('../models/User.js');
+    const target = await User.create({ name: 'Suspend Me', username: 'suspendme', password: 'suspendpass1' });
+    const { agent: admin } = await login('admin', 'adminpass1');
+
+    // Suspension needs a future end time.
+    expect((await admin.patch(`/api/v1/admin/users/${target._id}`).send({ action: 'suspend' })).status).toBe(400);
+
+    const until = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const suspended = await admin.patch(`/api/v1/admin/users/${target._id}`).send({ action: 'suspend', suspendUntil: until });
+    expect(suspended.body.data.user).toMatchObject({ status: 'disabled', suspension: 'suspended' });
+
+    // A suspended account cannot log in, and the block says when it ends.
+    const blocked = await login('suspendme', 'suspendpass1');
+    expect(blocked.res.status).toBe(403);
+    expect(blocked.res.body.message).toMatch(/suspended until/i);
+
+    const dismissed = await admin.patch(`/api/v1/admin/users/${target._id}`).send({ action: 'dismiss' });
+    expect(dismissed.body.data.user).toMatchObject({ status: 'disabled', suspension: 'dismissed' });
+    expect((await login('suspendme', 'suspendpass1')).res.body.message).toMatch(/disabled/i);
+
+    const back = await admin.patch(`/api/v1/admin/users/${target._id}`).send({ action: 'reinstate' });
+    expect(back.body.data.user).toMatchObject({ status: 'active', suspension: 'active' });
+    expect((await login('suspendme', 'suspendpass1')).res.status).toBe(200);
+  });
+
+  it('counts open reports in the dashboard stats', async () => {
+    const { agent: admin } = await login('admin', 'adminpass1');
+    const stats = await admin.get('/api/v1/admin/stats');
+    expect(stats.body.data.openReports).toBeGreaterThanOrEqual(0);
+    expect(stats.body.data).toHaveProperty('suspended');
+  });
+});

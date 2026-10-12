@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { KeyRound, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Clock, KeyRound, Pencil, Plus, Search, ShieldOff, Trash2 } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Modal, PageSpinner, Spinner, StatusBadge } from '../../components/ui'
@@ -13,6 +13,94 @@ import { formatDate } from '../../lib/utils'
 type UserList = { total: number; page: number; pages: number; data: { users: User[] } }
 type Draft = { name: string; username: string; email: string; password: string; role: User['role']; status: User['status'] }
 const emptyDraft: Draft = { name: '', username: '', email: '', password: '', role: 'user', status: 'active' }
+
+const DURATIONS = [
+  { label: '1 hour', hours: 1 },
+  { label: '24 hours', hours: 24 },
+  { label: '7 days', hours: 24 * 7 },
+  { label: '30 days', hours: 24 * 30 },
+] as const
+
+const suspensionBadge = (u: User) => {
+  if (u.suspension === 'suspended' && u.suspendedUntil) {
+    const ended = new Date(u.suspendedUntil).getTime() <= Date.now()
+    if (!ended) return `Suspended until ${new Date(u.suspendedUntil).toLocaleString()}`
+    return 'Suspension ended'
+  }
+  if (u.suspension === 'dismissed') return 'Dismissed'
+  return null
+}
+
+function SuspendModal({ user, onClose }: { user: User | null; onClose: () => void }) {
+  const qc = useQueryClient()
+  const { toast } = useUi()
+  const [hours, setHours] = useState<number>(24)
+
+  const act = useMutation({
+    mutationFn: ({ action, suspendUntil }: { action: 'suspend' | 'dismiss' | 'reinstate'; suspendUntil?: string }) =>
+      api(`/admin/users/${user?._id}`, { method: 'PATCH', body: { action, suspendUntil } }),
+    onSuccess: (_res, vars) => {
+      qc.invalidateQueries({ queryKey: ['admin'] })
+      toast(vars.action === 'suspend' ? 'User suspended' : vars.action === 'dismiss' ? 'User dismissed' : 'User reinstated')
+      onClose()
+    },
+    onError: (err) => toast(errorMessage(err), 'error'),
+  })
+
+  if (!user) return null
+  return (
+    <Modal open onClose={onClose} title={`Moderate @${user.username}`}>
+      <div className="space-y-4">
+        <div>
+          <p className="label">Suspend for a set time</p>
+          <div className="flex flex-wrap gap-2">
+            {DURATIONS.map((d) => (
+              <button
+                key={d.hours}
+                type="button"
+                className={hours === d.hours ? 'btn-primary px-3 py-1.5 text-sm' : 'btn-outline px-3 py-1.5 text-sm'}
+                onClick={() => setHours(d.hours)}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="btn-primary mt-3 w-full justify-center"
+            disabled={act.isPending}
+            onClick={() => act.mutate({ action: 'suspend', suspendUntil: new Date(Date.now() + hours * 3600_000).toISOString() })}
+          >
+            {act.isPending ? <Spinner className="size-4" /> : <Clock className="size-4" />} Suspend for {DURATIONS.find((d) => d.hours === hours)?.label}
+          </button>
+          <p className="mt-2 text-xs text-ink-500">Their account is blocked now and lifts automatically when the time is up.</p>
+        </div>
+
+        <div className="border-t border-ink-200 pt-4 dark:border-ink-800">
+          <button
+            type="button"
+            className="btn-danger w-full justify-center"
+            disabled={act.isPending}
+            onClick={() => act.mutate({ action: 'dismiss' })}
+          >
+            <ShieldOff className="size-4" /> Disable until I re-enable
+          </button>
+        </div>
+
+        {user.status === 'disabled' && (
+          <button
+            type="button"
+            className="btn-outline w-full justify-center"
+            disabled={act.isPending}
+            onClick={() => act.mutate({ action: 'reinstate' })}
+          >
+            Reinstate account
+          </button>
+        )}
+      </div>
+    </Modal>
+  )
+}
 
 function UserForm({ initial, onClose }: { initial: User | null; onClose: () => void }) {
   const qc = useQueryClient()
@@ -106,6 +194,7 @@ export default function Users() {
   const status = params.get('status') || ''
   const [editing, setEditing] = useState<User | null | undefined>(params.get('new') ? null : undefined)
   const [deleting, setDeleting] = useState<User | null>(null)
+  const [moderating, setModerating] = useState<User | null>(null)
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -221,11 +310,16 @@ export default function Users() {
                     <td className="px-4 py-3">
                       <button
                         disabled={isMe}
-                        onClick={() => quickUpdate.mutate({ id: u._id, body: { status: u.status === 'active' ? 'disabled' : 'active' } })}
-                        title={isMe ? 'You cannot disable yourself' : u.status === 'active' ? 'Click to disable' : 'Click to enable'}
-                        className="disabled:cursor-not-allowed"
+                        onClick={() => setModerating(u)}
+                        title={isMe ? 'You cannot moderate yourself' : 'Suspend or disable this account'}
+                        className="text-left disabled:cursor-not-allowed"
                       >
                         <StatusBadge status={u.status} />
+                        {suspensionBadge(u) && (
+                          <span className="mt-0.5 block text-xs text-amber-600">
+                            {u.suspension === 'suspended' ? `until ${new Date(u.suspendedUntil!).toLocaleDateString()}` : 'dismissed'}
+                          </span>
+                        )}
                       </button>
                     </td>
                     <td className="px-4 py-3">
@@ -236,6 +330,7 @@ export default function Users() {
                     <td className="px-4 py-3 text-ink-500">{formatDate(u.createdAt)}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
+                        <button className="btn-ghost p-2" onClick={() => setModerating(u)} disabled={isMe} title="Suspend or disable" aria-label={`Moderate ${u.username}`}><ShieldOff className="size-4" /></button>
                         <button className="btn-ghost p-2" onClick={() => setEditing(u)} aria-label={`Edit ${u.username}`}><Pencil className="size-4" /></button>
                         <button className="btn-ghost p-2 text-red-600 hover:text-red-700" disabled={isMe} onClick={() => setDeleting(u)} aria-label={`Delete ${u.username}`}><Trash2 className="size-4" /></button>
                       </div>
@@ -274,6 +369,8 @@ export default function Users() {
           </button>
         </div>
       </Modal>
+
+      <SuspendModal user={moderating} onClose={() => setModerating(null)} />
     </div>
   )
 }

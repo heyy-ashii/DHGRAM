@@ -1,6 +1,7 @@
 import { config } from '../config.js';
 import { User } from '../models/User.js';
 import { AppError, asyncHandler } from '../utils/AppError.js';
+import { liftIfExpired } from '../utils/suspension.js';
 import { verifyToken } from '../utils/tokens.js';
 
 function readToken(req) {
@@ -19,7 +20,13 @@ async function resolveUser(req) {
     return null;
   }
   const user = await User.findById(payload.sub);
-  if (!user || user.status !== 'active' || user.changedPasswordAfter(payload.iat)) return null;
+  if (!user) return null;
+  if (user.status !== 'active') {
+    // A temporary suspension lifts itself the moment it runs out.
+    const lifted = await liftIfExpired(user);
+    if (!lifted) return null;
+  }
+  if (user.changedPasswordAfter(payload.iat)) return null;
   return user;
 }
 
