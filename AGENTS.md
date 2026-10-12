@@ -128,6 +128,34 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
   URLs, so there is no object storage. The API caps avatar/story payloads at
   ~1.5 MB, so raise both the client compression and the Zod limit together.
 
+## Sign-up & auth
+
+- Sign-up is **roster-verified**, not email OTP: the student enters their **name**
+  and **registration number**, and the server checks both against the *same row*
+  of the official student spreadsheet (`server/roster.js`, used by
+  `server/routes/auth.js` signup). The username is derived from the name and the
+  initial password is registration number + admission number (e.g. `2500013411`);
+  users are told to change it after first login. Password reset still uses email
+  OTP (`requestResetCode` / `resetPassword`).
+
+## UI & design system
+
+- "Editorial warmth" direction: a calm, community-journal feel.
+- Tokens live in `src/index.css` (`@theme`): fonts `font-sans` (Plus Jakarta
+  Sans) and `font-heading` (Fraunces), warm `ink-*` neutrals, `brand` (blue),
+  `accent` (coral), plus a soft shadow scale (`shadow-soft`, `shadow-lift`).
+  `index.html` loads both Google Fonts.
+- Reuse the semantic classes rather than raw utilities: `.card`, `.btn-primary`,
+  `.btn-dark`, `.btn-outline`, `.btn-ghost`, `.input`, `.label`, `.eyebrow`,
+  `.animate-rise`, `.animate-pop`.
+- **Use `ink-*` for neutrals, never `neutral-*`/`gray-*`** — a cold gray breaks
+  the warm palette.
+- Shared primitives are in `src/components/ui.tsx`: `Skeleton`, `FeedSkeleton`,
+  `PostCardSkeleton`, `Toaster`, `Modal`, `EmptyState`, `ErrorState`, `Spinner`.
+  Prefer content-shaped skeletons over a lone page spinner.
+- Motion (staggered card reveals, springy like/story presses) must respect
+  `prefers-reduced-motion`; it is disabled globally in `index.css`.
+
 ## Gotchas
 
 - Apps Script POSTs answer 302 to `script.googleusercontent.com`; Node's fetch
