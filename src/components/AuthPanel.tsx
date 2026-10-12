@@ -49,7 +49,7 @@ function PasswordInput({
 const titles = { login: 'Welcome back', signup: 'Create your account', forgot: 'Reset password' }
 const subtitles = {
   login: 'Log in with your username or email.',
-  signup: 'Use the name and registration number on the student list.',
+  signup: 'Just your registration number from the student list - no name needed.',
   forgot: '',
 }
 
@@ -74,8 +74,6 @@ export default function AuthPanel({
     password: '',
     email: '',
     code: '',
-    name: '',
-    username: '',
     regNo: '',
   })
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }))
@@ -116,7 +114,7 @@ export default function AuthPanel({
     if (mode === 'login') return run(async () => done(await auth.login(form.identifier, form.password), 'Welcome back!'))
     if (mode === 'signup')
       return run(async () =>
-        done(await auth.signup({ name: form.name, regNo: form.regNo }), 'Account created. Welcome to DHGRAM!'),
+        done(await auth.signup({ regNo: form.regNo }), 'Account created. Welcome to DHGRAM!'),
       )
     if (step === 'email') return sendCode()
     return run(async () =>
@@ -191,29 +189,31 @@ export default function AuthPanel({
         {mode === 'signup' && (
           <>
             <div>
-              <label className="label" htmlFor="name">Full name</label>
-              <input
-                id="name"
-                className="input"
-                value={form.name}
-                onChange={(e) => set('name')(e.target.value)}
-                autoComplete="name"
-                placeholder="As it appears on the student list"
-                required
-              />
-            </div>
-            <div>
               <label className="label" htmlFor="regNo">Registration number</label>
               <input
                 id="regNo"
                 className="input"
                 value={form.regNo}
                 onChange={(e) => set('regNo')(e.target.value)}
+                inputMode="numeric"
+                autoComplete="off"
                 placeholder="e.g. 250001"
                 required
               />
               <p className="mt-1.5 text-xs text-ink-500">
-                Your password is your registration number and admission number together (e.g. 2500013411). Change it after your first login.
+                The registration number on the student list. No name needed — we find you by this.
+              </p>
+            </div>
+            <div className="rounded-2xl bg-brand-soft px-4 py-3 text-xs leading-relaxed text-brand-dark dark:bg-brand/10 dark:text-blue-200">
+              <p className="font-semibold text-ink-800 dark:text-ink-100">Your first password</p>
+              <p className="mt-1">
+                Your <span className="font-semibold">registration number</span> followed by your{' '}
+                <span className="font-semibold">admission number</span>, with no space. For example, registration{' '}
+                <code className="rounded bg-white/70 px-1 py-0.5 font-semibold dark:bg-black/20">250001</code> and
+                admission <code className="rounded bg-white/70 px-1 py-0.5 font-semibold dark:bg-black/20">3411</code>{' '}
+                gives{' '}
+                <code className="rounded bg-white/70 px-1 py-0.5 font-semibold dark:bg-black/20">2500013411</code>. You
+                can change it after logging in.
               </p>
             </div>
           </>

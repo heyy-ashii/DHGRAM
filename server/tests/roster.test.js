@@ -37,6 +37,17 @@ describe('findStudent', () => {
   });
 });
 
+describe('findStudentByRegNo', () => {
+  it('matches on the registration number alone', async () => {
+    const { findStudentByRegNo } = await import('../roster.js');
+    const a = await findStudentByRegNo('250006');
+    const b = await findStudentByRegNo('250007');
+    expect(a).toMatchObject({ name: 'Muhammed Sinan M', adNo: '689' });
+    expect(b).toMatchObject({ name: 'Muhammed Sinan M', adNo: '690' });
+    expect(await findStudentByRegNo('250099')).toBeNull();
+  });
+});
+
 describe('initialPassword', () => {
   it('is the registration number followed by the admission number', async () => {
     const { initialPassword } = await import('../roster.js');
