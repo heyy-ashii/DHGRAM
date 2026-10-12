@@ -2,30 +2,34 @@ import { config } from './config.js';
 import { AppError } from './utils/AppError.js';
 
 // The signup allow-list lives in a public Google Sheet. A person may create an
-// account only when their name and admission number both appear on the same row.
+// account only when their name and registration number appear on the same row.
 //
-//   | AD.NO | NAME                | PHONE | EMAIL |
-//   | 3411  | Sayyid Shaham AP    |       |       |
+//   | AD.NO | REG. NO | NAME                | PHONE | EMAIL |
+//   | 3411  | 250001  | Sayyid Shaham AP    |       |       |
 //
-// The sheet is exported as CSV, which needs no credentials while it is shared
-// "anyone with the link". The raw text is cached briefly so a burst of signups
-// does not hammer Google.
+// Names repeat on the sheet (several students share a name), so the registration
+// number is what makes a row unique. The sheet is exported as CSV, which needs no
+// credentials while it is shared "anyone with the link". The raw text is cached
+// briefly so a burst of signups does not hammer Google.
 
 export function parseRosterCsv(text) {
   const rows = [];
   for (const line of String(text).split(/\r?\n/)) {
-    const cells = line.split(',').map((c) => c.trim());
+    const cells = line.split(',').map((c) => c.trim().replace(/^"(.*)"$/, '$1'));
     const adNo = cells[0];
-    const name = cells[1];
+    const regNo = cells[1];
+    const name = cells[2];
     // Skips the title, the header and trailing blank rows.
-    if (!adNo || !name) continue;
+    if (!adNo || !regNo || !name) continue;
     if (/^(ad\.?\s*no\.?|admission)$/i.test(adNo)) continue;
-    rows.push({ adNo, name });
+    if (/^reg\.?\s*no\.?$/i.test(regNo)) continue;
+    rows.push({ adNo, regNo, name });
   }
   return rows;
 }
 
 const normAdNo = (v) => String(v ?? '').trim().toLowerCase().replace(/^u(?=\d)/, '');
+const normRegNo = (v) => String(v ?? '').trim().toLowerCase().replace(/^u(?=\d)/, '');
 const normName = (v) => String(v ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
 
 let cache = { at: 0, rows: [] };
@@ -46,11 +50,17 @@ export async function loadRoster({ fresh = false } = {}) {
   return rows;
 }
 
-export async function findStudent(name, admissionNo) {
+export async function findStudent(name, regNo) {
   const rows = await loadRoster();
   const wantName = normName(name);
-  const wantAdNo = normAdNo(admissionNo);
-  return rows.find((r) => normName(r.name) === wantName && normAdNo(r.adNo) === wantAdNo) ?? null;
+  const wantRegNo = normRegNo(regNo);
+  return rows.find((r) => normName(r.name) === wantName && normRegNo(r.regNo) === wantRegNo) ?? null;
+}
+
+// The initial password is the registration number followed by the admission
+// number, with no separator.
+export function initialPassword(student) {
+  return `${normRegNo(student.regNo)}${normAdNo(student.adNo)}`;
 }
 
 // "Muhammed Shamil KT" -> "muhammed.shamil.kt", a valid username for this app

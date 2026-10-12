@@ -1,6 +1,6 @@
 # DHGRAM — Share & Message
 
-A chat and thought-sharing platform for students: a public **Thoughts** feed, one-to-one **Messages** between students, and a built-in **Chat with Admin** inside Messages. Sign-up is by name + admission number on the student roster.
+A chat and thought-sharing platform for students: a public **Thoughts** feed, one-to-one **Messages** between students, and a built-in **Chat with Admin** inside Messages. Sign-up is by name + registration number on the student roster.
 
 Created by **Ashique.Pilassery**.
 
@@ -39,7 +39,7 @@ Legacy `/discover`, `/programs/:id`, `/search` and `/admin/*` redirect to `/feed
 - **Messages:** signed-in students see **all other students** in the Messages sidebar (not just existing conversations) and start a one-to-one chat from there. The page is full-screen. Messages refresh by polling.
 - **30-day retention:** messages older than `CHAT_RETENTION_DAYS` (30 by default) are deleted when a thread is read and by the daily cleanup cron.
 - **Chat with Admin:** lives inside Messages. Students open the **Support** conversation (sidebar or header button) to message the admin team; admins land on the support inbox in Messages and can reply or mark conversations resolved. There is no separate admin dashboard.
-- **Create Account:** on `/login` or `/signup`. The student enters the name and admission number on the student list; a matching entry creates an account whose username is built from the name and whose initial password is the admission number. There is no email step.
+- **Create Account:** on `/login` or `/signup`. The student enters the name and registration number on the student list; a matching row creates an account whose username is built from the name and whose initial password is the registration number followed by the admission number (e.g. `2500013411`). There is no email step.
 - **Forgot password:** reset by emailed code.
 
 > Images (avatars and stories) are downscaled in the browser and stored inline as data URLs, so there is no object-storage service to configure. Keep an eye on row size if you raise the client compression limits.
