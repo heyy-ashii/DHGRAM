@@ -10,7 +10,7 @@ interface AuthValue {
   loading: boolean
   isAdmin: boolean
   login: (identifier: string, password: string) => Promise<User>
-  signup: (input: { name: string; admissionNo: string }) => Promise<User>
+  signup: (input: { name: string; regNo: string }) => Promise<User>
   requestResetCode: (email: string) => Promise<{ message: string; devCode?: string }>
   resetPassword: (input: { email: string; code: string; password: string }) => Promise<User>
   logout: () => Promise<void>

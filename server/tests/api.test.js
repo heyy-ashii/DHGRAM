@@ -3,7 +3,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 process.env.NODE_ENV = 'test';
-process.env.ROSTER_CSV = 'AD.NO,NAME,PHONE,EMAIL\n3411,New Student,,\n9999,Lock User,,\n';
+process.env.ROSTER_CSV = 'AD.NO,REG. NO,NAME,PHONE,EMAIL\n3411,250001,New Student,,\n9999,250009,Lock User,,\n';
 // This suite runs on the in-memory MongoDB. Blank the other datastore settings
 // that .env may carry so tests never reach a hosted database. Empty strings are
 // used deliberately: dotenv does not override keys that already exist.
@@ -42,7 +42,7 @@ const login = async (identifier, password) => {
 describe('auth', () => {
   it('creates an account for a student on the roster', async () => {
     const agent = request.agent(app);
-    const ok = await agent.post('/api/v1/auth/signup').send({ name: 'New Student', admissionNo: '3411' });
+    const ok = await agent.post('/api/v1/auth/signup').send({ name: 'New Student', regNo: '250001' });
     expect(ok.status).toBe(201);
     expect(ok.body.data.user.username).toBe('new.student');
     expect(ok.body.data.user.role).toBe('user');
@@ -52,17 +52,17 @@ describe('auth', () => {
     const me = await agent.get('/api/v1/auth/me');
     expect(me.body.data.user.username).toBe('new.student');
 
-    // The admission number is the initial password.
-    expect((await login('new.student', '3411')).res.status).toBe(200);
+    // The registration + admission number is the initial password.
+    expect((await login('new.student', '2500013411')).res.status).toBe(200);
 
     // A second signup for the same student is rejected.
-    expect((await request(app).post('/api/v1/auth/signup').send({ name: 'New Student', admissionNo: '3411' })).status).toBe(409);
+    expect((await request(app).post('/api/v1/auth/signup').send({ name: 'New Student', regNo: '250001' })).status).toBe(409);
   });
 
-  it('rejects a name or admission number that is not on the roster', async () => {
-    const badName = await request(app).post('/api/v1/auth/signup').send({ name: 'Nobody Here', admissionNo: '3411' });
+  it('rejects a name or registration number that is not on the roster', async () => {
+    const badName = await request(app).post('/api/v1/auth/signup').send({ name: 'Nobody Here', regNo: '250001' });
     expect(badName.status).toBe(403);
-    const badAdNo = await request(app).post('/api/v1/auth/signup').send({ name: 'New Student', admissionNo: '1234' });
+    const badAdNo = await request(app).post('/api/v1/auth/signup').send({ name: 'New Student', regNo: '1234' });
     expect(badAdNo.status).toBe(403);
   });
 

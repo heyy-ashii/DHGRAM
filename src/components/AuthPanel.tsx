@@ -43,7 +43,7 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
-  const [form, setForm] = useState({ identifier: '', password: '', email: '', code: '', name: '', username: '', admissionNo: '' })
+  const [form, setForm] = useState({ identifier: '', password: '', email: '', code: '', name: '', username: '', regNo: '' })
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }))
 
   const switchMode = (m: AuthMode) => {
@@ -81,7 +81,7 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
     e.preventDefault()
     if (mode === 'login') return run(async () => done(await auth.login(form.identifier, form.password), 'Welcome back!'))
     if (mode === 'signup')
-      return run(async () => done(await auth.signup({ name: form.name, admissionNo: form.admissionNo }), 'Account created. Welcome to DHGRAM!'))
+      return run(async () => done(await auth.signup({ name: form.name, regNo: form.regNo }), 'Account created. Welcome to DHGRAM!'))
     if (step === 'email') return sendCode()
     return run(async () => done(await auth.resetPassword({ email: form.email, code: form.code, password: form.password }), 'Password updated'))
   }
@@ -115,7 +115,7 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
       <h2 className={cn('font-bold', compact ? 'text-lg' : 'text-2xl')}>{titles[mode]}</h2>
       <p className="mb-5 mt-1 text-sm text-slate-500">
         {mode === 'login' && 'Log in with your username or email.'}
-        {mode === 'signup' && 'Use the name and admission number on the student list.'}
+        {mode === 'signup' && 'Use the name and registration number on the student list.'}
         {mode === 'forgot' && (step === 'email' ? 'We will email you a code to reset your password.' : 'Enter the code and choose a new password.')}
       </p>
 
@@ -153,16 +153,18 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
               />
             </div>
             <div>
-              <label className="label" htmlFor="admissionNo">Admission number</label>
+              <label className="label" htmlFor="regNo">Registration number</label>
               <input
-                id="admissionNo"
+                id="regNo"
                 className="input"
-                value={form.admissionNo}
-                onChange={(e) => set('admissionNo')(e.target.value)}
-                placeholder="e.g. 3411"
+                value={form.regNo}
+                onChange={(e) => set('regNo')(e.target.value)}
+                placeholder="e.g. 250001"
                 required
               />
-              <p className="mt-1 text-xs text-slate-500">Your admission number is your initial password. Change it after your first login.</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Your password is your registration number and admission number together (e.g. 2500013411). Change it after your first login.
+              </p>
             </div>
           </>
         )}

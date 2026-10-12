@@ -3,7 +3,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 process.env.NODE_ENV = 'test';
-process.env.ROSTER_CSV = 'AD.NO,NAME,PHONE,EMAIL\n3411,New Student,,\n3412,Chat Student,,\n';
+process.env.ROSTER_CSV = 'AD.NO,REG. NO,NAME,PHONE,EMAIL\n3411,250001,New Student,,\n3412,250002,Chat Student,,\n';
 // This suite runs on the fake in-process Sheets API. Blank the Supabase settings
 // that .env may carry: datastore() prefers Supabase, which would send the tests
 // to a hosted database. Empty strings are deliberate; dotenv keeps existing keys.
@@ -224,7 +224,7 @@ describe('DHGRAM on Google Sheets only', () => {
 
   it('creates an account from the roster, logs in and reads /me', async () => {
     const agent = request.agent(app);
-    const ok = await agent.post('/api/v1/auth/signup').send({ name: 'New Student', admissionNo: '3411' });
+    const ok = await agent.post('/api/v1/auth/signup').send({ name: 'New Student', regNo: '250001' });
     expect(ok.status).toBe(201);
     expect(ok.body.data.user.username).toBe('new.student');
     expect(ok.body.data.user.role).toBe('user');
@@ -233,16 +233,16 @@ describe('DHGRAM on Google Sheets only', () => {
     const me = await agent.get('/api/v1/auth/me');
     expect(me.body.data.user.username).toBe('new.student');
 
-    const login = await request(app).post('/api/v1/auth/login').send({ identifier: 'new.student', password: '3411' });
+    const login = await request(app).post('/api/v1/auth/login').send({ identifier: 'new.student', password: '2500013411' });
     expect(login.status).toBe(200);
 
     const bad = await request(app).post('/api/v1/auth/login').send({ identifier: 'new.student', password: 'wrongpass' });
     expect(bad.status).toBe(401);
   });
 
-  it('rejects a name or admission number that is not on the roster', async () => {
-    expect((await request(app).post('/api/v1/auth/signup').send({ name: 'Nobody Here', admissionNo: '3411' })).status).toBe(403);
-    expect((await request(app).post('/api/v1/auth/signup').send({ name: 'New Student', admissionNo: '9999' })).status).toBe(403);
+  it('rejects a name or registration number that is not on the roster', async () => {
+    expect((await request(app).post('/api/v1/auth/signup').send({ name: 'Nobody Here', regNo: '250001' })).status).toBe(403);
+    expect((await request(app).post('/api/v1/auth/signup').send({ name: 'New Student', regNo: '999999' })).status).toBe(403);
   });
 
   it('seeds an admin account used by the support chat flow', async () => {
@@ -256,7 +256,7 @@ describe('DHGRAM on Google Sheets only', () => {
 
   it('runs the chat flow', async () => {
     const user = request.agent(app);
-    await user.post('/api/v1/auth/signup').send({ name: 'Chat Student', admissionNo: '3412' });
+    await user.post('/api/v1/auth/signup').send({ name: 'Chat Student', regNo: '250002' });
 
     const sent = await user.post('/api/v1/chat/me/messages').send({ body: 'Hello admin' });
     expect(sent.status).toBe(201);
@@ -281,7 +281,7 @@ describe('DHGRAM on Google Sheets only', () => {
   it('drops chat messages older than the retention window', async () => {
     const { Message } = await import('../models/Chat.js');
     const user = request.agent(app);
-    await user.post('/api/v1/auth/login').send({ identifier: 'chat.student', password: '3412' });
+    await user.post('/api/v1/auth/login').send({ identifier: 'chat.student', password: '2500023412' });
     await user.post('/api/v1/chat/me/messages').send({ body: 'soon to be purged' });
     const conv = (await user.get('/api/v1/chat/me')).body.data.conversation;
     const old = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000);
@@ -294,7 +294,7 @@ describe('DHGRAM on Google Sheets only', () => {
 
   it('shares and moderates posts through the sheet', async () => {
     const user = request.agent(app);
-    await user.post('/api/v1/auth/login').send({ identifier: 'chat.student', password: '3412' });
+    await user.post('/api/v1/auth/login').send({ identifier: 'chat.student', password: '2500023412' });
 
     expect((await request(app).get('/api/v1/posts')).status).toBe(200);
     const created = await user.post('/api/v1/posts').send({ body: 'Hello from the sheet' });
