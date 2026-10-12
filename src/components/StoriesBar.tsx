@@ -52,7 +52,7 @@ function StoryComposer({ imageUrl, user, onCancel, onPosted }: {
   })
 
   return (
-    <div className="fixed inset-0 z-[70] flex flex-col bg-slate-950/95 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Preview story">
+    <div className="fixed inset-0 z-[70] flex flex-col bg-ink-950/95 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Preview story">
       <header className="flex items-center justify-between gap-3 p-4 text-white">
         <button className="rounded-full p-2 text-white/80 hover:bg-white/10" onClick={onCancel} aria-label="Discard preview">
           <X className="size-5" />
@@ -203,10 +203,10 @@ function Ring({ unseen, children }: { unseen: boolean; children: ReactNode }) {
     <span
       className={cn(
         'grid size-16 place-items-center rounded-full p-0.5',
-        unseen ? 'bg-gradient-to-tr from-amber-400 via-rose-500 to-accent' : 'bg-slate-300 dark:bg-slate-700',
+        unseen ? 'bg-gradient-to-tr from-accent via-pink-500 to-brand' : 'bg-ink-200 dark:bg-ink-700',
       )}
     >
-      <span className="grid size-full place-items-center rounded-full bg-slate-50 dark:bg-slate-950">{children}</span>
+      <span className="grid size-full place-items-center rounded-full bg-ink-50 dark:bg-ink-950">{children}</span>
     </span>
   )
 }
@@ -239,7 +239,7 @@ export default function StoriesBar({ groups }: { groups: StoryGroup[] }) {
   }
 
   return (
-    <div className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+    <div className="border-b border-ink-200 bg-white dark:border-ink-800 dark:bg-ink-900">
       <div className="flex gap-4 overflow-x-auto px-4 py-4">
         {user && (
           <div className="flex w-16 shrink-0 flex-col items-center gap-1.5">
@@ -251,7 +251,7 @@ export default function StoriesBar({ groups }: { groups: StoryGroup[] }) {
               <Ring unseen={Boolean(myGroup?.unseen)}>
                 <Avatar user={user} size="lg" />
               </Ring>
-              <span className="absolute -bottom-0.5 -right-0.5 grid size-6 place-items-center rounded-full border-2 border-white bg-brand text-white dark:border-slate-900">
+              <span className="absolute -bottom-0.5 -right-0.5 grid size-6 place-items-center rounded-full border-2 border-white bg-brand text-white dark:border-ink-900">
                 {busy ? <Spinner className="size-3.5" /> : <Plus className="size-3.5" />}
               </span>
             </button>
@@ -278,7 +278,7 @@ export default function StoriesBar({ groups }: { groups: StoryGroup[] }) {
         })}
 
         {!groups.length && !user && (
-          <p className="py-3 text-sm text-slate-500">Log in to share a story.</p>
+          <p className="py-3 text-sm text-ink-500">Log in to share a story.</p>
         )}
       </div>
 

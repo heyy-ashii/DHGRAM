@@ -1,21 +1,32 @@
-import { ArrowLeft, Eye, EyeOff, MailCheck } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Lock, MailCheck, ShieldCheck, Sparkles } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
 import { errorMessage } from '../lib/api'
 import type { User } from '../lib/types'
 import { cn } from '../lib/utils'
+import BrandName from './BrandName'
 import { Spinner } from './ui'
 
 export type AuthMode = 'login' | 'signup' | 'forgot'
 
-function PasswordInput({ value, onChange, id, autoComplete }: { value: string; onChange: (v: string) => void; id: string; autoComplete: string }) {
+function PasswordInput({
+  value,
+  onChange,
+  id,
+  autoComplete,
+}: {
+  value: string
+  onChange: (v: string) => void
+  id: string
+  autoComplete: string
+}) {
   const [show, setShow] = useState(false)
   return (
     <div className="relative">
       <input
         id={id}
-        className="input pr-10"
+        className="input pr-11"
         type={show ? 'text' : 'password'}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -25,7 +36,7 @@ function PasswordInput({ value, onChange, id, autoComplete }: { value: string; o
       />
       <button
         type="button"
-        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-700"
+        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-2 text-ink-400 transition hover:bg-ink-100 hover:text-ink-700 dark:hover:bg-ink-800"
         onClick={() => setShow((s) => !s)}
         aria-label={show ? 'Hide password' : 'Show password'}
       >
@@ -35,7 +46,22 @@ function PasswordInput({ value, onChange, id, autoComplete }: { value: string; o
   )
 }
 
-export default function AuthPanel({ initialMode = 'login', onSuccess, compact }: { initialMode?: AuthMode; onSuccess?: (u: User) => void; compact?: boolean }) {
+const titles = { login: 'Welcome back', signup: 'Create your account', forgot: 'Reset password' }
+const subtitles = {
+  login: 'Log in with your username or email.',
+  signup: 'Use the name and registration number on the student list.',
+  forgot: '',
+}
+
+export default function AuthPanel({
+  initialMode = 'login',
+  onSuccess,
+  compact,
+}: {
+  initialMode?: AuthMode
+  onSuccess?: (u: User) => void
+  compact?: boolean
+}) {
   const auth = useAuth()
   const { toast } = useUi()
   const [mode, setMode] = useState<AuthMode>(initialMode)
@@ -43,7 +69,15 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
-  const [form, setForm] = useState({ identifier: '', password: '', email: '', code: '', name: '', username: '', regNo: '' })
+  const [form, setForm] = useState({
+    identifier: '',
+    password: '',
+    email: '',
+    code: '',
+    name: '',
+    username: '',
+    regNo: '',
+  })
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }))
 
   const switchMode = (m: AuthMode) => {
@@ -81,17 +115,19 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
     e.preventDefault()
     if (mode === 'login') return run(async () => done(await auth.login(form.identifier, form.password), 'Welcome back!'))
     if (mode === 'signup')
-      return run(async () => done(await auth.signup({ name: form.name, regNo: form.regNo }), 'Account created. Welcome to DHGRAM!'))
+      return run(async () =>
+        done(await auth.signup({ name: form.name, regNo: form.regNo }), 'Account created. Welcome to DHGRAM!'),
+      )
     if (step === 'email') return sendCode()
-    return run(async () => done(await auth.resetPassword({ email: form.email, code: form.code, password: form.password }), 'Password updated'))
+    return run(async () =>
+      done(await auth.resetPassword({ email: form.email, code: form.code, password: form.password }), 'Password updated'),
+    )
   }
 
-  const titles = { login: 'Welcome back', signup: 'Create your account', forgot: 'Reset password' }
-
-  return (
-    <div className={cn(!compact && 'card p-6 sm:p-8')}>
+  const formCard = (
+    <div className={cn('w-full', !compact && 'card p-6 shadow-lift sm:p-8')}>
       {mode !== 'forgot' && (
-        <div className="mb-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" role="tablist">
+        <div className="mb-6 grid grid-cols-2 rounded-full bg-ink-100 p-1 dark:bg-ink-800" role="tablist">
           {(['login', 'signup'] as const).map((m) => (
             <button
               key={m}
@@ -99,7 +135,10 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
               role="tab"
               aria-selected={mode === m}
               onClick={() => switchMode(m)}
-              className={cn('rounded-lg py-2 text-sm font-semibold transition', mode === m ? 'bg-white shadow-sm dark:bg-slate-950' : 'text-slate-500')}
+              className={cn(
+                'rounded-full py-2 text-sm font-semibold transition',
+                mode === m ? 'bg-white text-ink-900 shadow-soft dark:bg-ink-950 dark:text-white' : 'text-ink-500',
+              )}
             >
               {m === 'login' ? 'Login' : 'Create Account'}
             </button>
@@ -112,11 +151,14 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
           <ArrowLeft className="size-4" /> Back to login
         </button>
       )}
-      <h2 className={cn('font-bold', compact ? 'text-lg' : 'text-2xl')}>{titles[mode]}</h2>
-      <p className="mb-5 mt-1 text-sm text-slate-500">
-        {mode === 'login' && 'Log in with your username or email.'}
-        {mode === 'signup' && 'Use the name and registration number on the student list.'}
-        {mode === 'forgot' && (step === 'email' ? 'We will email you a code to reset your password.' : 'Enter the code and choose a new password.')}
+
+      <h2 className={cn('font-bold', compact ? 'text-lg' : 'text-[1.75rem]')}>{titles[mode]}</h2>
+      <p className="mb-6 mt-1.5 text-sm text-ink-500">
+        {mode === 'forgot'
+          ? step === 'email'
+            ? 'We will email you a code to reset your password.'
+            : 'Enter the code and choose a new password.'
+          : subtitles[mode]}
       </p>
 
       <form onSubmit={onSubmit} className="space-y-4">
@@ -124,12 +166,20 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
           <>
             <div>
               <label className="label" htmlFor="identifier">Username or email</label>
-              <input id="identifier" className="input" value={form.identifier} onChange={(e) => set('identifier')(e.target.value)} autoComplete="username" required />
+              <input
+                id="identifier"
+                className="input"
+                value={form.identifier}
+                onChange={(e) => set('identifier')(e.target.value)}
+                autoComplete="username"
+                placeholder="e.g. jiyad.cp"
+                required
+              />
             </div>
             <div>
               <div className="flex items-center justify-between">
                 <label className="label" htmlFor="password">Password</label>
-                <button type="button" className="mb-1.5 text-xs font-medium text-brand hover:underline" onClick={() => switchMode('forgot')}>
+                <button type="button" className="mb-1.5 text-xs font-semibold text-brand hover:underline" onClick={() => switchMode('forgot')}>
                   Forgot password?
                 </button>
               </div>
@@ -162,7 +212,7 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
                 placeholder="e.g. 250001"
                 required
               />
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1.5 text-xs text-ink-500">
                 Your password is your registration number and admission number together (e.g. 2500013411). Change it after your first login.
               </p>
             </div>
@@ -187,7 +237,7 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
             {step === 'code' && (
               <>
                 {info && (
-                  <p className="flex items-start gap-2 rounded-xl bg-brand-soft p-3 text-sm text-indigo-800 dark:bg-brand/15 dark:text-indigo-200">
+                  <p className="flex items-start gap-2 rounded-2xl bg-brand-soft p-3 text-sm text-brand-dark dark:bg-brand/10 dark:text-blue-200">
                     <MailCheck className="mt-0.5 size-4 shrink-0" /> {info}
                   </p>
                 )}
@@ -205,10 +255,10 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
                     required
                   />
                   <div className="mt-1.5 flex justify-between text-xs">
-                    <button type="button" className="text-slate-500 hover:text-slate-900 dark:hover:text-white" onClick={() => setStep('email')}>
+                    <button type="button" className="text-ink-500 hover:text-ink-900 dark:hover:text-white" onClick={() => setStep('email')}>
                       Change email
                     </button>
-                    <button type="button" className="font-medium text-brand hover:underline disabled:opacity-50" onClick={sendCode} disabled={busy}>
+                    <button type="button" className="font-semibold text-brand hover:underline disabled:opacity-50" onClick={sendCode} disabled={busy}>
                       Resend code
                     </button>
                   </div>
@@ -216,7 +266,7 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
                 <div>
                   <label className="label" htmlFor="new-password">New password</label>
                   <PasswordInput id="new-password" value={form.password} onChange={set('password')} autoComplete="new-password" />
-                  <p className="mt-1 text-xs text-slate-500">At least 8 characters.</p>
+                  <p className="mt-1.5 text-xs text-ink-500">At least 8 characters.</p>
                 </div>
               </>
             )}
@@ -224,16 +274,80 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
         )}
 
         {error && (
-          <p className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700 dark:bg-rose-950 dark:text-rose-300" role="alert">
+          <p className="rounded-2xl bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300" role="alert">
             {error}
           </p>
         )}
 
-        <button type="submit" className="btn-primary w-full" disabled={busy}>
+        <button type="submit" className="btn-primary w-full py-3" disabled={busy}>
           {busy && <Spinner className="size-4" />}
-          {mode === 'login' ? 'Login' : mode === 'signup' ? 'Create account' : step === 'email' ? 'Send verification code' : 'Reset password'}
+          {mode === 'login'
+            ? 'Login'
+            : mode === 'signup'
+              ? 'Create account'
+              : step === 'email'
+                ? 'Send verification code'
+                : 'Reset password'}
         </button>
       </form>
+
+      {!compact && mode === 'signup' && (
+        <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-xs text-ink-400">
+          <ShieldCheck className="size-3.5" /> Verified against the official student roster.
+        </p>
+      )}
+    </div>
+  )
+
+  if (compact) return formCard
+
+  return (
+    <div className="mx-auto grid w-full max-w-5xl items-stretch gap-8 px-4 py-10 lg:grid-cols-2 lg:py-16">
+      {/* Marketing / brand side */}
+      <div className="relative hidden flex-col justify-between overflow-hidden rounded-[2rem] bg-ink-900 p-10 text-white lg:flex dark:bg-ink-900">
+        <div
+          className="pointer-events-none absolute -right-16 -top-16 size-72 rounded-full opacity-30 blur-3xl"
+          style={{ background: 'radial-gradient(circle, #2563eb, transparent 70%)' }}
+        />
+        <div
+          className="pointer-events-none absolute -bottom-20 -left-10 size-72 rounded-full opacity-20 blur-3xl"
+          style={{ background: 'radial-gradient(circle, #f97316, transparent 70%)' }}
+        />
+        <div className="relative">
+          <span className="eyebrow text-blue-300">
+            <Sparkles className="size-3.5" /> Share &amp; Message
+          </span>
+          <h1 className="mt-5 text-balance font-heading text-4xl font-bold leading-[1.08]">
+            A quieter place to share what's on your mind.
+          </h1>
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/70">
+            Post thoughts, follow the community feed, and message other students one-to-one or in groups — all in one
+            calm, focused space.
+          </p>
+        </div>
+
+        <div className="relative space-y-3">
+          {[
+            { icon: Sparkles, text: 'Share thoughts & stories with your batch' },
+            { icon: Lock, text: 'Private one-to-one and group messages' },
+            { icon: ShieldCheck, text: 'Sign-up verified against the student roster' },
+          ].map(({ icon: Icon, text }) => (
+            <div key={text} className="flex items-center gap-3 rounded-2xl bg-white/5 px-4 py-3 ring-1 ring-white/10">
+              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/10">
+                <Icon className="size-4" />
+              </span>
+              <span className="text-sm font-medium text-white/85">{text}</span>
+            </div>
+          ))}
+        </div>
+
+        <p className="relative text-xs text-white/50">
+          <BrandName /> · for students
+        </p>
+      </div>
+
+      {/* Form side */}
+      <div className="flex items-center justify-center">{formCard}</div>
     </div>
   )
 }

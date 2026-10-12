@@ -27,7 +27,7 @@ export function GroupAvatar({ group, size = 'md' }: { group: Pick<GroupSummary, 
       {faces.map((m, i) => (
         <span
           key={m._id}
-          className={cn('absolute overflow-hidden rounded-full ring-2 ring-white dark:ring-slate-950')}
+          className={cn('absolute overflow-hidden rounded-full ring-2 ring-white dark:ring-ink-950')}
           style={{ left: `${i * 28}%`, top: `${i % 2 ? 22 : 0}%`, width: size === 'sm' ? '62%' : '60%', height: size === 'sm' ? '62%' : '60%' }}
         >
           <Avatar user={m} size="sm" className="size-full" />
@@ -98,7 +98,7 @@ function GroupMembersModal({ open, onClose, group, onLeft, onDeleted }: {
     <>
       <Modal open={open} onClose={onClose} title={group.name}>
         <div className="space-y-4">
-          <p className="text-sm text-slate-500">{groupSubtitle(group)}</p>
+          <p className="text-sm text-ink-500">{groupSubtitle(group)}</p>
 
           {!adding ? (
             <button className="btn-outline w-full" onClick={() => setAdding(true)}>
@@ -107,7 +107,7 @@ function GroupMembersModal({ open, onClose, group, onLeft, onDeleted }: {
           ) : (
             <div>
               <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-400" />
                 <input
                   className="input pl-9"
                   placeholder="Search students to add…"
@@ -117,9 +117,9 @@ function GroupMembersModal({ open, onClose, group, onLeft, onDeleted }: {
                   aria-label="Search students"
                 />
               </div>
-              <div className="mt-2 max-h-48 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="mt-2 max-h-48 overflow-y-auto rounded-xl border border-ink-200 dark:border-ink-800">
                 {candidates.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-slate-500">No students found.</p>
+                  <p className="py-6 text-center text-sm text-ink-500">No students found.</p>
                 ) : (
                   candidates.map((u) => (
                     <button
@@ -127,12 +127,12 @@ function GroupMembersModal({ open, onClose, group, onLeft, onDeleted }: {
                       type="button"
                       disabled={add.isPending}
                       onClick={() => add.mutate(u._id)}
-                      className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-slate-100 disabled:opacity-50 dark:hover:bg-slate-800"
+                      className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-ink-100 disabled:opacity-50 dark:hover:bg-ink-800"
                     >
                       <Avatar user={u} size="sm" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">{u.name}</p>
-                        <p className="truncate text-xs text-slate-500">@{u.username}</p>
+                        <p className="truncate text-xs text-ink-500">@{u.username}</p>
                       </div>
                       <UserPlus className="size-4 text-brand" />
                     </button>
@@ -147,18 +147,18 @@ function GroupMembersModal({ open, onClose, group, onLeft, onDeleted }: {
             <p className="label mb-2">Members</p>
             <div className="max-h-64 space-y-1 overflow-y-auto">
               {group.members.map((m) => (
-                <div key={m._id} className="flex items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                <div key={m._id} className="flex items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-ink-50 dark:hover:bg-ink-800/50">
                   <Avatar user={m} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{m.name || 'Student'}</p>
-                    <p className="truncate text-xs text-slate-500">@{m.username}</p>
+                    <p className="truncate text-xs text-ink-500">@{m.username}</p>
                   </div>
                   {String(m._id) === String(group.createdBy) && (
                     <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand">Creator</span>
                   )}
                   {isCreator && String(m._id) !== String(user?._id) && (
                     <button
-                      className="btn-ghost p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50"
+                      className="btn-ghost p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
                       onClick={() => remove.mutate(m._id)}
                       disabled={remove.isPending}
                       aria-label={`Remove ${m.name || 'member'}`}
@@ -171,8 +171,8 @@ function GroupMembersModal({ open, onClose, group, onLeft, onDeleted }: {
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4 dark:border-slate-800">
-            <button className="btn-ghost text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50" onClick={() => setConfirmLeave(true)}>
+          <div className="flex flex-wrap justify-end gap-2 border-t border-ink-200 pt-4 dark:border-ink-800">
+            <button className="btn-ghost text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50" onClick={() => setConfirmLeave(true)}>
               <LogOut className="size-4" /> Leave group
             </button>
             {isCreator && (
@@ -236,12 +236,12 @@ export function GroupThreadView({ id, onBack }: { id: string; onBack: () => void
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex items-center gap-3 border-b border-slate-200 p-4 dark:border-slate-800">
+      <header className="flex items-center gap-3 border-b border-ink-200 p-4 dark:border-ink-800">
         <button className="btn-ghost p-2 md:hidden" onClick={onBack} aria-label="Back to conversations"><ArrowLeft className="size-4" /></button>
         {data?.group && <GroupAvatar group={data.group} size="sm" />}
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{data?.group.name ?? 'Group'}</p>
-          {data?.group && <p className="truncate text-xs text-slate-500">{groupSubtitle(data.group)}</p>}
+          {data?.group && <p className="truncate text-xs text-ink-500">{groupSubtitle(data.group)}</p>}
         </div>
         {data?.group && (
           <button className="btn-ghost p-2" onClick={() => setMembers(true)} aria-label="Group members and options">
@@ -250,18 +250,18 @@ export function GroupThreadView({ id, onBack }: { id: string; onBack: () => void
         )}
       </header>
 
-      <div className="flex-1 overflow-y-auto bg-slate-50 p-4 dark:bg-slate-900/40">
+      <div className="flex-1 overflow-y-auto bg-ink-50 p-4 dark:bg-ink-900/40">
         {isLoading ? (
           <div className="grid h-full place-items-center"><Spinner /></div>
         ) : messages.length === 0 ? (
-          <p className="mt-8 text-center text-sm text-slate-500">No messages yet. Say hello to the group.</p>
+          <p className="mt-8 text-center text-sm text-ink-500">No messages yet. Say hello to the group.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {messages.map((m) => (
-              <div key={m._id} className={cn('max-w-[80%] rounded-2xl px-3.5 py-2 text-sm', m.mine ? 'self-end rounded-br-sm bg-brand text-white' : 'self-start rounded-bl-sm bg-white shadow-sm dark:bg-slate-800')}>
+              <div key={m._id} className={cn('max-w-[80%] rounded-2xl px-3.5 py-2 text-sm', m.mine ? 'self-end rounded-br-sm bg-brand text-white' : 'self-start rounded-bl-sm bg-white shadow-sm dark:bg-ink-800')}>
                 {!m.mine && <p className="mb-0.5 text-xs font-semibold text-brand">{nameOf(m.sender)}</p>}
                 <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                <p className={cn('mt-1 text-[10px]', m.mine ? 'text-indigo-100' : 'text-slate-400')}>{formatTime(m.createdAt)}</p>
+                <p className={cn('mt-1 text-[10px]', m.mine ? 'text-blue-100' : 'text-ink-400')}>{formatTime(m.createdAt)}</p>
               </div>
             ))}
             <div ref={end} />
@@ -269,7 +269,7 @@ export function GroupThreadView({ id, onBack }: { id: string; onBack: () => void
         )}
       </div>
 
-      <form onSubmit={onSubmit} className="flex gap-2 border-t border-slate-200 p-3 dark:border-slate-800">
+      <form onSubmit={onSubmit} className="flex gap-2 border-t border-ink-200 p-3 dark:border-ink-800">
         <input className="input" placeholder="Message the group…" value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} aria-label="Message group" />
         <button type="submit" className="btn-primary px-3" disabled={send.isPending || !text.trim()} aria-label="Send">
           {send.isPending ? <Spinner className="size-4" /> : <Send className="size-4" />}
@@ -340,7 +340,7 @@ export function NewGroupModal({ open, onClose, onCreated }: { open: boolean; onC
         <div>
           <div className="mb-1 flex items-center justify-between">
             <span className="label mb-0">Members</span>
-            <span className="text-xs text-slate-500">{selected.size} selected</span>
+            <span className="text-xs text-ink-500">{selected.size} selected</span>
           </div>
           {selected.size > 0 && (
             <div className="mb-2 flex flex-wrap gap-1.5">
@@ -357,7 +357,7 @@ export function NewGroupModal({ open, onClose, onCreated }: { open: boolean; onC
             </div>
           )}
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-400" />
             <input
               className="input pl-9"
               placeholder="Search students to add…"
@@ -366,11 +366,11 @@ export function NewGroupModal({ open, onClose, onCreated }: { open: boolean; onC
               aria-label="Search students"
             />
           </div>
-          <div className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-ink-200 dark:border-ink-800">
             {isLoading ? (
               <div className="grid place-items-center py-8"><Spinner /></div>
             ) : candidates.length === 0 ? (
-              <p className="py-6 text-center text-sm text-slate-500">No students found.</p>
+              <p className="py-6 text-center text-sm text-ink-500">No students found.</p>
             ) : (
               candidates.map((u: PeerUser) => {
                 const on = selected.has(u._id)
@@ -379,14 +379,14 @@ export function NewGroupModal({ open, onClose, onCreated }: { open: boolean; onC
                     key={u._id}
                     type="button"
                     onClick={() => toggle(u._id)}
-                    className={cn('flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800', on && 'bg-brand/5')}
+                    className={cn('flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-ink-100 dark:hover:bg-ink-800', on && 'bg-brand/5')}
                   >
                     <Avatar user={u} size="sm" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{u.name}</p>
-                      <p className="truncate text-xs text-slate-500">@{u.username}</p>
+                      <p className="truncate text-xs text-ink-500">@{u.username}</p>
                     </div>
-                    <span className={cn('grid size-5 shrink-0 place-items-center rounded-full border', on ? 'border-brand bg-brand text-white' : 'border-slate-300 dark:border-slate-600')}>
+                    <span className={cn('grid size-5 shrink-0 place-items-center rounded-full border', on ? 'border-brand bg-brand text-white' : 'border-ink-300 dark:border-ink-600')}>
                       {on && <Check className="size-3" />}
                     </span>
                   </button>
