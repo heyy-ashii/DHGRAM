@@ -11,6 +11,7 @@ const storySchema = new mongoose.Schema(
   {
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     imageUrl: { type: String, required: true },
+    caption: { type: String, default: '', maxlength: 280 },
   },
   { timestamps: true },
 );

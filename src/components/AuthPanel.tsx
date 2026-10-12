@@ -25,7 +25,7 @@ function PasswordInput({ value, onChange, id, autoComplete }: { value: string; o
       />
       <button
         type="button"
-        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-neutral-400 hover:text-neutral-700"
+        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-700"
         onClick={() => setShow((s) => !s)}
         aria-label={show ? 'Hide password' : 'Show password'}
       >
@@ -91,7 +91,7 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
   return (
     <div className={cn(!compact && 'card p-6 sm:p-8')}>
       {mode !== 'forgot' && (
-        <div className="mb-6 grid grid-cols-2 rounded-xl bg-neutral-100 p-1 dark:bg-neutral-800" role="tablist">
+        <div className="mb-6 grid grid-cols-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" role="tablist">
           {(['login', 'signup'] as const).map((m) => (
             <button
               key={m}
@@ -99,7 +99,7 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
               role="tab"
               aria-selected={mode === m}
               onClick={() => switchMode(m)}
-              className={cn('rounded-lg py-2 text-sm font-semibold transition', mode === m ? 'bg-white shadow-sm dark:bg-neutral-950' : 'text-neutral-500')}
+              className={cn('rounded-lg py-2 text-sm font-semibold transition', mode === m ? 'bg-white shadow-sm dark:bg-slate-950' : 'text-slate-500')}
             >
               {m === 'login' ? 'Login' : 'Create Account'}
             </button>
@@ -113,7 +113,7 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
         </button>
       )}
       <h2 className={cn('font-bold', compact ? 'text-lg' : 'text-2xl')}>{titles[mode]}</h2>
-      <p className="mb-5 mt-1 text-sm text-neutral-500">
+      <p className="mb-5 mt-1 text-sm text-slate-500">
         {mode === 'login' && 'Log in with your username or email.'}
         {mode === 'signup' && 'Use the name and admission number on the student list.'}
         {mode === 'forgot' && (step === 'email' ? 'We will email you a code to reset your password.' : 'Enter the code and choose a new password.')}
@@ -162,7 +162,7 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
                 placeholder="e.g. 3411"
                 required
               />
-              <p className="mt-1 text-xs text-neutral-500">Your admission number is your initial password. Change it after your first login.</p>
+              <p className="mt-1 text-xs text-slate-500">Your admission number is your initial password. Change it after your first login.</p>
             </div>
           </>
         )}
@@ -185,7 +185,7 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
             {step === 'code' && (
               <>
                 {info && (
-                  <p className="flex items-start gap-2 rounded-xl bg-blue-50 p-3 text-sm text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+                  <p className="flex items-start gap-2 rounded-xl bg-brand-soft p-3 text-sm text-indigo-800 dark:bg-brand/15 dark:text-indigo-200">
                     <MailCheck className="mt-0.5 size-4 shrink-0" /> {info}
                   </p>
                 )}
@@ -203,7 +203,7 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
                     required
                   />
                   <div className="mt-1.5 flex justify-between text-xs">
-                    <button type="button" className="text-neutral-500 hover:text-neutral-900 dark:hover:text-white" onClick={() => setStep('email')}>
+                    <button type="button" className="text-slate-500 hover:text-slate-900 dark:hover:text-white" onClick={() => setStep('email')}>
                       Change email
                     </button>
                     <button type="button" className="font-medium text-brand hover:underline disabled:opacity-50" onClick={sendCode} disabled={busy}>
@@ -214,7 +214,7 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
                 <div>
                   <label className="label" htmlFor="new-password">New password</label>
                   <PasswordInput id="new-password" value={form.password} onChange={set('password')} autoComplete="new-password" />
-                  <p className="mt-1 text-xs text-neutral-500">At least 8 characters.</p>
+                  <p className="mt-1 text-xs text-slate-500">At least 8 characters.</p>
                 </div>
               </>
             )}
@@ -222,7 +222,7 @@ export default function AuthPanel({ initialMode = 'login', onSuccess, compact }:
         )}
 
         {error && (
-          <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300" role="alert">
+          <p className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700 dark:bg-rose-950 dark:text-rose-300" role="alert">
             {error}
           </p>
         )}

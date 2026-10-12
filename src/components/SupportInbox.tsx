@@ -47,12 +47,12 @@ function SupportThread({ id, onBack }: { id: string; onBack: () => void }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex items-center justify-between gap-3 border-b border-neutral-200 p-4 dark:border-neutral-800">
+      <header className="flex items-center justify-between gap-3 border-b border-slate-200 p-4 dark:border-slate-800">
         <div className="flex min-w-0 items-center gap-2">
           <button className="btn-ghost p-2 md:hidden" onClick={onBack} aria-label="Back to conversations"><ArrowLeft className="size-4" /></button>
           <div className="min-w-0">
             <p className="truncate font-semibold">{conversation.user?.name ?? 'Deleted user'}</p>
-            <p className="truncate text-xs text-neutral-500">@{conversation.user?.username}{conversation.user?.email ? ` · ${conversation.user.email}` : ''}</p>
+            <p className="truncate text-xs text-slate-500">@{conversation.user?.username}{conversation.user?.email ? ` · ${conversation.user.email}` : ''}</p>
           </div>
         </div>
         <button className="btn-outline shrink-0 px-3 py-1.5 text-xs" onClick={() => setStatus.mutate(conversation.status === 'open' ? 'closed' : 'open')}>
@@ -60,15 +60,15 @@ function SupportThread({ id, onBack }: { id: string; onBack: () => void }) {
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto bg-neutral-50 p-4 dark:bg-neutral-900/40">
+      <div className="flex-1 overflow-y-auto bg-slate-50 p-4 dark:bg-slate-900/40">
         {messages.length === 0 ? (
-          <p className="mt-8 text-center text-sm text-neutral-500">No messages yet.</p>
+          <p className="mt-8 text-center text-sm text-slate-500">No messages yet.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {messages.map((m) => (
-              <div key={m._id} className={cn('max-w-[80%] rounded-2xl px-3.5 py-2 text-sm', m.senderRole === 'admin' ? 'self-end rounded-br-sm bg-brand text-white' : 'self-start rounded-bl-sm bg-white shadow-sm dark:bg-neutral-800')}>
+              <div key={m._id} className={cn('max-w-[80%] rounded-2xl px-3.5 py-2 text-sm', m.senderRole === 'admin' ? 'self-end rounded-br-sm bg-brand text-white' : 'self-start rounded-bl-sm bg-white shadow-sm dark:bg-slate-800')}>
                 <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                <p className={cn('mt-1 text-[10px]', m.senderRole === 'admin' ? 'text-blue-100' : 'text-neutral-400')}>{formatTime(m.createdAt)}</p>
+                <p className={cn('mt-1 text-[10px]', m.senderRole === 'admin' ? 'text-indigo-100' : 'text-slate-400')}>{formatTime(m.createdAt)}</p>
               </div>
             ))}
             <div ref={end} />
@@ -76,7 +76,7 @@ function SupportThread({ id, onBack }: { id: string; onBack: () => void }) {
         )}
       </div>
 
-      <form onSubmit={onSubmit} className="flex gap-2 border-t border-neutral-200 p-3 dark:border-neutral-800">
+      <form onSubmit={onSubmit} className="flex gap-2 border-t border-slate-200 p-3 dark:border-slate-800">
         <input className="input" placeholder="Reply…" value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} aria-label="Reply" />
         <button type="submit" className="btn-primary px-3" disabled={send.isPending || !text.trim()} aria-label="Send reply">
           {send.isPending ? <Spinner className="size-4" /> : <Send className="size-4" />}
@@ -97,10 +97,10 @@ export default function SupportInbox({ selected, onSelect, onBack }: { selected:
 
   return (
     <>
-      <div className={cn('flex min-h-0 flex-col border-r border-neutral-200 dark:border-neutral-800', selected && 'hidden md:flex')}>
-        <div className="flex gap-1 border-b border-neutral-200 p-2 dark:border-neutral-800">
+      <div className={cn('flex min-h-0 flex-col border-r border-slate-200 dark:border-slate-800', selected && 'hidden md:flex')}>
+        <div className="flex gap-1 border-b border-slate-200 p-2 dark:border-slate-800">
           {(['open', 'closed', ''] as const).map((f) => (
-            <button key={f || 'all'} onClick={() => setFilter(f)} className={cn('flex-1 rounded-lg py-1.5 text-xs font-semibold capitalize', filter === f ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800')}>
+            <button key={f || 'all'} onClick={() => setFilter(f)} className={cn('flex-1 rounded-lg py-1.5 text-xs font-semibold capitalize', filter === f ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800')}>
               {f || 'all'}
             </button>
           ))}
@@ -109,16 +109,16 @@ export default function SupportInbox({ selected, onSelect, onBack }: { selected:
           {isLoading ? (
             <PageSpinner />
           ) : conversations.length === 0 ? (
-            <p className="p-6 text-center text-sm text-neutral-500">No conversations.</p>
+            <p className="p-6 text-center text-sm text-slate-500">No conversations.</p>
           ) : (
             conversations.map((c) => (
-              <button key={c._id} onClick={() => onSelect(c._id)} className={cn('flex w-full flex-col gap-0.5 border-b border-neutral-100 px-4 py-3 text-left hover:bg-neutral-50 dark:border-neutral-800 dark:hover:bg-neutral-800/40', selected === c._id && 'bg-blue-50 dark:bg-blue-950/40')}>
+              <button key={c._id} onClick={() => onSelect(c._id)} className={cn('flex w-full flex-col gap-0.5 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/40', selected === c._id && 'bg-brand-soft dark:bg-brand/15')}>
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate font-semibold">{c.user?.name ?? 'Deleted user'}</span>
-                  <span className="shrink-0 text-[11px] text-neutral-400">{formatShort(c.lastMessageAt)}</span>
+                  <span className="shrink-0 text-[11px] text-slate-400">{formatShort(c.lastMessageAt)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-sm text-neutral-500">{c.lastMessage}</span>
+                  <span className="truncate text-sm text-slate-500">{c.lastMessage}</span>
                   {c.unreadForAdmin > 0 && <span className="grid size-5 shrink-0 place-items-center rounded-full bg-brand text-[10px] font-bold text-white">{c.unreadForAdmin}</span>}
                 </div>
               </button>
@@ -130,7 +130,7 @@ export default function SupportInbox({ selected, onSelect, onBack }: { selected:
         {selected ? (
           <SupportThread key={selected} id={selected} onBack={onBack} />
         ) : (
-          <p className="grid h-full place-items-center p-8 text-center text-sm text-neutral-500">Select a conversation.</p>
+          <p className="grid h-full place-items-center p-8 text-center text-sm text-slate-500">Select a conversation.</p>
         )}
       </div>
     </>

@@ -5,6 +5,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    allowedHosts: ['.prod-runtime.all-hands.dev'],
     proxy: { '/api': 'http://localhost:4000' },
   },
   build: {

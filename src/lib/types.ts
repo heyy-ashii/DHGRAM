@@ -55,6 +55,7 @@ export interface Conversation {
 export interface Story {
   _id: string
   imageUrl: string
+  caption: string
   author: PeerUser
   mine: boolean
   seen: boolean
@@ -78,6 +79,7 @@ export interface MessageThread {
 export interface GroupSummary {
   _id: string
   name: string
+  createdBy: string
   members: PeerUser[]
   memberCount: number
   mine: boolean

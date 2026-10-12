@@ -3,10 +3,11 @@ import { datastore } from '../config.js';
 import { SheetsGroup, SheetsGroupMember, SheetsGroupMessage } from '../sheets/models.js';
 import { SupabaseGroup, SupabaseGroupMember, SupabaseGroupMessage } from '../supabase/models.js';
 
-// Student group chats. Any member can create a group and add other students;
-// there is no admin role in a group. Membership is a plain list of user ids so
-// the same shape works on every datastore (a Mongo array, a JSON column in the
-// Sheet, and a uuid[] column in Postgres).
+// Student group chats. Any member can create a group and add other students. The
+// creator is the owner: they alone can remove members or delete the group, while
+// any member can leave. Membership is a plain list of user ids so the same shape
+// works on every datastore (a Mongo array, a JSON column in the Sheet, and a
+// uuid[] column in Postgres).
 
 const groupSchema = new mongoose.Schema(
   {

@@ -67,7 +67,7 @@ function UserForm({ initial, onClose }: { initial: User | null; onClose: () => v
           required={!initial}
           autoComplete="new-password"
         />
-        <p className="mt-1 text-xs text-neutral-500">Passwords are stored encrypted (bcrypt) and can only be reset, never viewed.</p>
+        <p className="mt-1 text-xs text-slate-500">Passwords are stored encrypted (bcrypt) and can only be reset, never viewed.</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -159,14 +159,14 @@ export default function Users() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">User management</h1>
-          <p className="text-sm text-neutral-500">{data ? `${data.total} account${data.total === 1 ? '' : 's'}` : ' '}</p>
+          <p className="text-sm text-slate-500">{data ? `${data.total} account${data.total === 1 ? '' : 's'}` : ' '}</p>
         </div>
         <button className="btn-primary" onClick={() => setEditing(null)}><Plus className="size-4" /> Add user</button>
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">
         <div className="relative min-w-60 flex-1">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
           <input className="input pl-9" placeholder="Search name, username or email" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search users" />
         </div>
         <select className="input w-auto" value={role} onChange={(e) => setFilter('role', e.target.value)} aria-label="Filter role">
@@ -186,7 +186,7 @@ export default function Users() {
       ) : (
         <div className={`card mt-4 overflow-x-auto ${isFetching ? 'opacity-70' : ''}`}>
           <table className="w-full min-w-[820px] text-left text-sm">
-            <thead className="border-b border-neutral-200 bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:bg-slate-900">
               <tr>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Username</th>
@@ -198,17 +198,17 @@ export default function Users() {
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
               {data?.data.users.map((u) => {
                 const isMe = u._id === me?._id
                 return (
-                  <tr key={u._id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/40">
-                    <td className="px-4 py-3 font-medium">{u.name}{isMe && <span className="ml-2 text-xs text-neutral-400">(you)</span>}</td>
+                  <tr key={u._id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                    <td className="px-4 py-3 font-medium">{u.name}{isMe && <span className="ml-2 text-xs text-slate-400">(you)</span>}</td>
                     <td className="px-4 py-3 font-mono text-xs">@{u.username}</td>
-                    <td className="px-4 py-3">{u.email ?? <span className="text-neutral-400">—</span>}{u.email && u.emailVerified && <span className="ml-1 text-xs text-emerald-600">✓</span>}</td>
+                    <td className="px-4 py-3">{u.email ?? <span className="text-slate-400">—</span>}{u.email && u.emailVerified && <span className="ml-1 text-xs text-emerald-600">✓</span>}</td>
                     <td className="px-4 py-3">
                       <select
-                        className="rounded-lg border border-neutral-200 bg-transparent px-2 py-1 text-xs dark:border-neutral-700"
+                        className="rounded-lg border border-slate-200 bg-transparent px-2 py-1 text-xs dark:border-slate-700"
                         value={u.role}
                         disabled={isMe}
                         onChange={(e) => quickUpdate.mutate({ id: u._id, body: { role: e.target.value as User['role'] } })}
@@ -233,18 +233,18 @@ export default function Users() {
                         <KeyRound className="size-3.5" /> Reset
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-neutral-500">{formatDate(u.createdAt)}</td>
+                    <td className="px-4 py-3 text-slate-500">{formatDate(u.createdAt)}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">
                         <button className="btn-ghost p-2" onClick={() => setEditing(u)} aria-label={`Edit ${u.username}`}><Pencil className="size-4" /></button>
-                        <button className="btn-ghost p-2 text-red-600 hover:text-red-700" disabled={isMe} onClick={() => setDeleting(u)} aria-label={`Delete ${u.username}`}><Trash2 className="size-4" /></button>
+                        <button className="btn-ghost p-2 text-rose-600 hover:text-rose-700" disabled={isMe} onClick={() => setDeleting(u)} aria-label={`Delete ${u.username}`}><Trash2 className="size-4" /></button>
                       </div>
                     </td>
                   </tr>
                 )
               })}
               {data?.data.users.length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-10 text-center text-neutral-500">No users match your filters.</td></tr>
+                <tr><td colSpan={8} className="px-4 py-10 text-center text-slate-500">No users match your filters.</td></tr>
               )}
             </tbody>
           </table>
@@ -264,7 +264,7 @@ export default function Users() {
       </Modal>
 
       <Modal open={Boolean(deleting)} onClose={() => setDeleting(null)} title="Delete user?">
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           This permanently deletes <strong>@{deleting?.username}</strong> along with their thoughts, stories and chats. This cannot be undone.
         </p>
         <div className="mt-6 flex justify-end gap-2">

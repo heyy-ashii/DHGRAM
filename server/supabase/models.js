@@ -198,10 +198,12 @@ const storySpec = {
   columns: {
     author: 'author_id',
     imageUrl: 'image_url',
+    caption: 'caption',
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   },
   dates: dateFields(),
+  defaults: { caption: '' },
   publicJSON: (s) => ({ ...s }),
 };
 

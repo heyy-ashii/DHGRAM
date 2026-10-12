@@ -40,7 +40,7 @@ export function Composer({ onDone, placeholder = 'Share a thought…' }: { onDon
         onChange={(e) => setText(e.target.value)}
       />
       <div className="mt-3 flex items-center justify-between">
-        <span className="text-xs text-neutral-400">{text.length}/2000</span>
+        <span className="text-xs text-slate-400">{text.length}/2000</span>
         <button className="btn-primary" disabled={busy || !text.trim()}>
           {busy ? <Spinner className="size-4" /> : <Send className="size-4" />} Post
         </button>
@@ -83,13 +83,13 @@ export function PostCard({ post, onChange }: { post: Post; onChange: () => void 
   }
 
   return (
-    <article className={cn('card p-4', post.hidden && 'opacity-60')}>
+    <article className={cn('card p-4 transition hover:border-slate-300/80 dark:hover:border-slate-700', post.hidden && 'opacity-60')}>
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Avatar user={post.author} size="sm" />
           <div>
             <p className="text-sm font-semibold">{post.author.name || 'Student'}</p>
-            <p className="text-xs text-neutral-400">
+            <p className="text-xs text-slate-400">
               @{post.author.username} · {formatShort(post.createdAt)}
             </p>
           </div>
@@ -102,15 +102,15 @@ export function PostCard({ post, onChange }: { post: Post; onChange: () => void 
             {menu && (
               <>
                 <button className="fixed inset-0 z-10 cursor-default" aria-hidden onClick={() => setMenu(false)} tabIndex={-1} />
-                <div className="card absolute right-0 z-20 mt-1 w-44 overflow-hidden p-1 text-sm">
+                <div className="card absolute right-0 z-20 mt-1 w-44 overflow-hidden p-1.5 text-sm shadow-lift">
                   {canEdit && (
-                    <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800" onClick={() => { setEditing(true); setMenu(false) }}>
+                    <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white" onClick={() => { setEditing(true); setMenu(false) }}>
                       <Pencil className="size-4" /> Edit
                     </button>
                   )}
                   {canDelete && (
                     <button
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50"
                       onClick={() => { setMenu(false); run(() => api(`/posts/${post._id}`, { method: 'DELETE' }), 'Post deleted') }}
                     >
                       <Trash2 className="size-4" /> Delete
@@ -139,7 +139,7 @@ export function PostCard({ post, onChange }: { post: Post; onChange: () => void 
 
       <footer className="mt-3 flex items-center gap-1">
         <button
-          className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition', post.likedByMe ? 'bg-red-50 text-red-600 dark:bg-red-950' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800')}
+          className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition', post.likedByMe ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-300' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200')}
           disabled={busy || !user}
           onClick={() => run(() => api(`/posts/${post._id}/like`, { method: 'POST' }), post.likedByMe ? 'Like removed' : 'Liked')}
           aria-label={post.likedByMe ? 'Unlike' : 'Like'}
@@ -147,7 +147,7 @@ export function PostCard({ post, onChange }: { post: Post; onChange: () => void 
           <Heart className={cn('size-4', post.likedByMe && 'fill-current')} /> {post.likes}
         </button>
         {!post.mine && (
-          <Link to={`/u/${post.author.username}`} className="ml-auto text-xs font-medium text-neutral-500 hover:text-brand">
+          <Link to={`/u/${post.author.username}`} className="ml-auto text-xs font-medium text-slate-500 hover:text-brand">
             View profile
           </Link>
         )}

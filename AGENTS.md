@@ -136,3 +136,7 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
   a function (React throws "destroy is not a function").
 - The sandbox resets between sessions: Docker, MongoDB and the dev servers are
   gone on return and must be restarted.
+- MongoDB Atlas (`*.mongodb.net`) is unreachable from the sandbox: TCP opens but
+  TLS aborts (`ssl3_read_bytes:tlsv1 alert internal error`) because the Atlas IP
+  allow-list rejects the sandbox egress IP. Add the IP (or `0.0.0.0/0`) in Atlas ▸
+  Network Access, or run against the Supabase/Sheets datastore instead.

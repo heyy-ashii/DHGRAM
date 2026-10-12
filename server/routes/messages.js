@@ -193,6 +193,20 @@ router.post(
   }),
 );
 
+// Delete a direct conversation and its messages. Either participant may delete
+// it, and the thread disappears for both people.
+router.delete(
+  '/:id',
+  validate(z.object({ id: objectId }), 'params'),
+  asyncHandler(async (req, res) => {
+    const me = req.user._id;
+    const conversation = await loadConversation(req.params.id, me);
+    await PeerMessage.deleteMany({ conversation: conversation._id });
+    await conversation.deleteOne();
+    res.status(204).end();
+  }),
+);
+
 export { purgeOldPeerMessages };
 
 export default router;

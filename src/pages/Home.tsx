@@ -1,3 +1,4 @@
+import { MessageSquare, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { PostCard } from '../components/PostCard'
 import StoriesBar from '../components/StoriesBar'
@@ -16,8 +17,8 @@ export default function Home() {
   return (
     <div className="mx-auto max-w-2xl px-0 pb-12 sm:px-4">
       {storiesLoading ? (
-        <div className="border-b border-neutral-200 px-4 py-4 dark:border-neutral-800">
-          <div className="h-16 animate-pulse rounded-full bg-neutral-100 dark:bg-neutral-800" />
+        <div className="border-b border-slate-200 px-4 py-4 dark:border-slate-800">
+          <div className="h-16 animate-pulse rounded-full bg-slate-100 dark:bg-slate-800" />
         </div>
       ) : (
         <StoriesBar groups={groups ?? []} />
@@ -25,8 +26,11 @@ export default function Home() {
 
       <div className="px-4 pt-6 sm:px-0">
         {!user && (
-          <div className="card mb-6 flex flex-col items-center gap-3 p-6 text-center">
-            <p className="text-sm text-neutral-600 dark:text-neutral-300">
+          <div className="card mb-6 flex flex-col items-center gap-3 overflow-hidden p-6 text-center">
+            <span className="surface-brand grid size-12 place-items-center rounded-2xl">
+              <Sparkles className="size-6" />
+            </span>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
               Log in to share thoughts and stories with the community.
             </p>
             <div className="flex gap-2">
@@ -41,7 +45,7 @@ export default function Home() {
         ) : error ? (
           <ErrorState message={error.message} onRetry={() => refetch()} />
         ) : posts.length === 0 ? (
-          <EmptyState title="No thoughts yet">Be the first to share something.</EmptyState>
+          <EmptyState title="No thoughts yet" icon={MessageSquare}>Be the first to share something.</EmptyState>
         ) : (
           <div className="flex flex-col gap-4">
             {posts.map((p) => (

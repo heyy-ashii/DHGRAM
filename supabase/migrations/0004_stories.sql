@@ -9,9 +9,13 @@ create table if not exists app_stories (
   author_id  uuid not null references app_users (id) on delete cascade,
   -- Data URL for the story image, same rationale as app_users.avatar.
   image_url  text not null,
+  caption    text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Older installs predate the caption column; add it in place.
+alter table app_stories add column if not exists caption text not null default '';
 
 create table if not exists app_story_views (
   id         uuid primary key default gen_random_uuid(),

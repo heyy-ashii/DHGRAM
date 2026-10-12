@@ -267,6 +267,29 @@ describe('peer messages', () => {
     expect(thread.body.data.conversation.lastMessage).toBe('');
     expect(await PeerConversation.countDocuments({})).toBeGreaterThan(0);
   });
+  it('lets either participant delete a direct conversation', async () => {
+    const { User } = await import('../models/User.js');
+    const { PeerConversation, PeerMessage } = await import('../models/PeerChat.js');
+    await User.create({ name: 'Del One', username: 'delone', password: 'delone1' });
+    await User.create({ name: 'Del Two', username: 'deltwo', password: 'deltwo1' });
+    const { agent: one } = await login('delone', 'delone1');
+    const { agent: two } = await login('deltwo', 'deltwo1');
+
+    const dir = await one.get('/api/v1/messages/directory?q=deltwo');
+    const other = dir.body.data.users.find((u) => u.username === 'deltwo');
+    const id = (await one.post('/api/v1/messages/start').send({ userId: other._id })).body.data.conversation._id;
+    await one.post(`/api/v1/messages/${id}`).send({ body: 'hello' });
+
+    // A third student cannot delete a thread they are not part of.
+    await User.create({ name: 'Del Nosy', username: 'delnosy', password: 'delnosy1' });
+    const { agent: nosy } = await login('delnosy', 'delnosy1');
+    expect((await nosy.delete(`/api/v1/messages/${id}`)).status).toBe(404);
+
+    expect((await two.delete(`/api/v1/messages/${id}`)).status).toBe(204);
+    expect((await one.get(`/api/v1/messages/${id}`)).status).toBe(404);
+    expect(await PeerConversation.countDocuments({ _id: id })).toBe(0);
+    expect(await PeerMessage.countDocuments({ conversation: id })).toBe(0);
+  });
 });
 
 describe('groups', () => {
@@ -323,6 +346,38 @@ describe('groups', () => {
     expect(meId).toBeTruthy();
   });
 
+  it('lets the creator remove members and delete the group', async () => {
+    const { User } = await import('../models/User.js');
+    const { Group, GroupMessage } = await import('../models/GroupChat.js');
+    await User.create({ name: 'Owner One', username: 'ownerone', password: 'ownerone1' });
+    await User.create({ name: 'Guest Two', username: 'guesttwo', password: 'guesttwo1' });
+    const { agent: owner } = await login('ownerone', 'ownerone1');
+    const { agent: guest } = await login('guesttwo', 'guesttwo1');
+
+    const dir = await owner.get('/api/v1/messages/directory?q=guesttwo');
+    const guestId = dir.body.data.users.find((u) => u.username === 'guesttwo')._id;
+    const created = await owner.post('/api/v1/groups').send({ name: 'Project team', memberIds: [guestId] });
+    const id = created.body.data.group._id;
+    const meId = (await owner.get('/api/v1/auth/me')).body.data.user._id;
+    expect(created.body.data.group.createdBy).toBe(meId);
+
+    // A plain member cannot remove anyone or delete the group.
+    expect((await guest.delete(`/api/v1/groups/${id}/members/${meId}`)).status).toBe(403);
+    expect((await guest.delete(`/api/v1/groups/${id}`)).status).toBe(403);
+
+    // The creator can remove a member, who then loses access.
+    expect((await owner.delete(`/api/v1/groups/${id}/members/${guestId}`)).status).toBe(200);
+    expect((await guest.get(`/api/v1/groups/${id}`)).status).toBe(404);
+    expect((await owner.get(`/api/v1/groups/${id}`)).body.data.group.memberCount).toBe(1);
+
+    // The creator can delete the group and its history.
+    await GroupMessage.create({ group: id, sender: meId, body: 'bye' });
+    expect((await owner.delete(`/api/v1/groups/${id}`)).status).toBe(204);
+    expect((await owner.get(`/api/v1/groups/${id}`)).status).toBe(404);
+    expect(await Group.countDocuments({ _id: id })).toBe(0);
+    expect(await GroupMessage.countDocuments({ group: id })).toBe(0);
+  });
+
   it('drops group messages older than the retention window', async () => {
     const { Group, GroupMessage } = await import('../models/GroupChat.js');
     const { User } = await import('../models/User.js');
@@ -368,13 +423,15 @@ describe('stories', () => {
     const { agent: one } = await login('storyone', 'storyone1');
     const { agent: two } = await login('storytwo', 'storytwo1');
 
-    const created = await one.post('/api/v1/stories').send({ imageUrl: 'data:image/png;base64,AAAA' });
+    const created = await one.post('/api/v1/stories').send({ imageUrl: 'data:image/png;base64,AAAA', caption: 'sunset run' });
     expect(created.status).toBe(201);
+    expect(created.body.data.story.caption).toBe('sunset run');
     const storyId = created.body.data.story._id;
 
     const feed = await two.get('/api/v1/stories');
     const group = feed.body.data.groups.find((g) => g.user.username === 'storyone');
     expect(group.stories).toHaveLength(1);
+    expect(group.stories[0].caption).toBe('sunset run');
     expect(group.unseen).toBe(true);
 
     // Viewing marks it seen for the viewer.
@@ -447,7 +504,7 @@ describe('admin', () => {
 
   it('lists, searches and filters users', async () => {
     const { agent: admin } = await login('admin', 'adminpass1');
-    const all = await admin.get('/api/v1/admin/users');
+    const all = await admin.get('/api/v1/admin/users?limit=100');
     expect(all.status).toBe(200);
     expect(all.body.data.users.some((u) => u.username === 'admin')).toBe(true);
     expect(all.body.data.users[0]).not.toHaveProperty('password');

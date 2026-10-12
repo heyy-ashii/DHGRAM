@@ -22,12 +22,12 @@ export default function Avatar({
       <img
         src={user.avatar}
         alt={user.name ?? ''}
-        className={cn('shrink-0 rounded-full object-cover', SIZES[size], className)}
+        className={cn('shrink-0 rounded-full object-cover ring-1 ring-slate-900/5 dark:ring-white/10', SIZES[size], className)}
       />
     )
   }
   return (
-    <span className={cn('grid shrink-0 place-items-center rounded-full bg-brand/10 font-bold text-brand', SIZES[size], className)}>
+    <span className={cn('grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand to-accent font-bold text-white shadow-sm', SIZES[size], className)}>
       {initial}
     </span>
   )
