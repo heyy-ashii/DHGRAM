@@ -90,6 +90,7 @@ const groupMessageSpec = {
 const storySpec = {
   name: 'Stories',
   dates: dateFields(),
+  defaults: { caption: '' },
   publicJSON: (s) => ({ ...s }),
 };
 

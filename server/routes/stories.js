@@ -27,6 +27,7 @@ const shapeStory = (s, viewerId, seen) => {
   return {
     _id: s._id,
     imageUrl: s.imageUrl,
+    caption: s.caption ?? '',
     author,
     mine: viewerId ? String(author._id) === String(viewerId) : false,
     seen: Boolean(seen),
@@ -93,6 +94,7 @@ router.get(
 const createBody = z.object({
   // Data URL. ~1.4 MB caps the JSON body while leaving room for a compressed image.
   imageUrl: z.string().trim().min(1, 'Choose an image').max(1_500_000, 'That image is too large'),
+  caption: z.string().trim().max(280).optional().default(''),
 });
 
 router.post(
@@ -101,7 +103,11 @@ router.post(
   storyLimiter,
   validate(createBody),
   asyncHandler(async (req, res) => {
-    const story = await Story.create({ author: req.user._id, imageUrl: req.body.imageUrl });
+    const story = await Story.create({
+      author: req.user._id,
+      imageUrl: req.body.imageUrl,
+      caption: req.body.caption ?? '',
+    });
     await story.populate('author', 'name username avatar');
     res.status(201).json({ status: 'success', data: { story: shapeStory(story, req.user._id, false) } });
   }),

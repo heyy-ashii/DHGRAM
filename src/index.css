@@ -5,8 +5,22 @@
 @theme {
   --font-sans: 'Inter', 'Noto Sans Malayalam', system-ui, sans-serif;
   --font-heading: 'Sora', 'Noto Sans Malayalam', system-ui, sans-serif;
-  --color-brand: #2563eb;
-  --color-brand-dark: #1d4ed8;
+
+  /* Brand: indigo with a violet accent. brand-soft is the tinted surface used
+     for active states and icon chips. */
+  --color-brand: #4f46e5;
+  --color-brand-dark: #4338ca;
+  --color-brand-soft: #eef2ff;
+  --color-accent: #7c3aed;
+
+  /* Slightly larger, softer radii for a more contemporary feel. */
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.15rem;
+  --radius-3xl: 1.5rem;
+
+  /* Two elevation levels: `soft` for resting cards, `lift` for hover/popovers. */
+  --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 10px 30px -18px rgb(15 23 42 / 0.18);
+  --shadow-lift: 0 2px 6px rgb(15 23 42 / 0.06), 0 22px 48px -24px rgb(15 23 42 / 0.35);
 }
 
 html {
@@ -14,45 +28,69 @@ html {
 }
 
 body {
-  @apply bg-neutral-50 text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100;
+  @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
   font-family: var(--font-sans);
+  /* A barely-there brand wash keeps large empty pages from feeling flat. */
+  background-image:
+    radial-gradient(60rem 60rem at 110% -10%, rgb(79 70 229 / 0.06), transparent 60%),
+    radial-gradient(50rem 50rem at -10% 0%, rgb(124 58 237 / 0.05), transparent 55%);
+  background-attachment: fixed;
 }
 
 h1,
 h2,
 h3 {
   font-family: var(--font-heading);
+  letter-spacing: -0.015em;
 }
 
 @layer components {
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-60;
+  /* Shared button base. Grouped selectors keep the base utilities in one place;
+     `@apply` of a custom component class is not supported by Tailwind v4. */
+  .btn,
+  .btn-primary,
+  .btn-dark,
+  .btn-outline,
+  .btn-ghost,
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-60;
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-60 bg-brand text-white shadow-sm hover:bg-brand-dark;
+    @apply bg-brand text-white shadow-soft hover:-translate-y-px hover:bg-brand-dark hover:shadow-lift active:translate-y-0;
   }
   .btn-dark {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-60 bg-neutral-900 text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200;
+    @apply bg-slate-900 text-white shadow-soft hover:-translate-y-px hover:bg-slate-800 hover:shadow-lift active:translate-y-0 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200;
   }
   .btn-outline {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-60 border border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-white dark:hover:bg-neutral-800;
+    @apply border border-slate-200 bg-white text-slate-900 shadow-soft hover:-translate-y-px hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-white dark:hover:border-slate-700 dark:hover:bg-slate-800;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-60 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white;
+    @apply text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white;
   }
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-60 bg-red-600 text-white hover:bg-red-700;
+    @apply bg-rose-600 text-white shadow-soft hover:-translate-y-px hover:bg-rose-700 hover:shadow-lift active:translate-y-0;
   }
   .input {
-    @apply w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-sm outline-none transition placeholder:text-neutral-400 focus:border-brand focus:ring-2 focus:ring-brand/20 dark:border-neutral-800 dark:bg-neutral-900;
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm shadow-sm outline-none transition placeholder:text-slate-400 focus:border-brand focus:ring-4 focus:ring-brand/15 dark:border-slate-800 dark:bg-slate-900 dark:placeholder:text-slate-500;
   }
   .label {
-    @apply mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300;
+    @apply mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300;
   }
   .card {
-    @apply rounded-2xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900;
+    @apply rounded-2xl border border-slate-200/80 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900;
+  }
+  .card-hover {
+    @apply transition duration-200 hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-lift;
   }
   .chip {
     @apply inline-flex items-center rounded-full border px-4 py-2 text-sm font-medium transition;
+  }
+  /* Tinted surface for icon chips, active rows and empty-state art. */
+  .surface-brand {
+    @apply bg-brand-soft text-brand dark:bg-brand/15 dark:text-indigo-300;
+  }
+  /* Wordmark treatment: the leading letters carry a brand-to-accent gradient. */
+  .text-gradient {
+    @apply bg-gradient-to-r from-brand to-accent bg-clip-text text-transparent;
   }
 }

@@ -1,4 +1,4 @@
-import { Loader2, X } from 'lucide-react'
+import { Loader2, X, type LucideIcon } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
 import { useUi } from '../context/UiContext'
 import { cn } from '../lib/utils'
@@ -18,8 +18,11 @@ export function PageSpinner() {
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
     <div className="card mx-auto max-w-md p-8 text-center">
-      <p className="font-semibold">Something went wrong</p>
-      <p className="mt-1 text-sm text-neutral-500">{message}</p>
+      <span className="surface-brand mx-auto grid size-12 place-items-center rounded-2xl">
+        <X className="size-6" />
+      </span>
+      <p className="mt-3 font-semibold">Something went wrong</p>
+      <p className="mt-1 text-sm text-slate-500">{message}</p>
       {onRetry && (
         <button className="btn-outline mt-4" onClick={onRetry}>
           Try again
@@ -29,11 +32,16 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
   )
 }
 
-export function EmptyState({ title, children }: { title: string; children?: ReactNode }) {
+export function EmptyState({ title, children, icon: Icon }: { title: string; children?: ReactNode; icon?: LucideIcon }) {
   return (
     <div className="card mx-auto max-w-md p-10 text-center">
+      {Icon && (
+        <span className="surface-brand mx-auto mb-4 grid size-12 place-items-center rounded-2xl">
+          <Icon className="size-6" />
+        </span>
+      )}
       <p className="font-semibold">{title}</p>
-      {children && <div className="mt-3 text-sm text-neutral-500">{children}</div>}
+      {children && <div className="mt-3 text-sm text-slate-500">{children}</div>}
     </div>
   )
 }
@@ -43,7 +51,7 @@ export function StatusBadge({ status }: { status: string }) {
     status === 'active' || status === 'open'
       ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-900'
       : status === 'disabled' || status === 'closed'
-        ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-900'
+        ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-900'
         : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-900'
   return <span className={cn('inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize', tone)}>{status}</span>
 }
@@ -73,12 +81,12 @@ export function Modal({
   }, [open, onClose])
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={cn('card max-h-[92vh] w-full overflow-y-auto rounded-b-none p-6 sm:rounded-2xl', wide ? 'sm:max-w-2xl' : 'sm:max-w-md')}
+        className={cn('card max-h-[92vh] w-full overflow-y-auto rounded-b-none p-6 shadow-lift sm:rounded-2xl', wide ? 'sm:max-w-2xl' : 'sm:max-w-md')}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -93,6 +101,38 @@ export function Modal({
   )
 }
 
+export function ConfirmModal({
+  open,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmLabel = 'Confirm',
+  tone = 'danger',
+  busy,
+}: {
+  open: boolean
+  onClose: () => void
+  onConfirm: () => void
+  title: string
+  message: ReactNode
+  confirmLabel?: string
+  tone?: 'danger' | 'primary'
+  busy?: boolean
+}) {
+  return (
+    <Modal open={open} onClose={onClose} title={title}>
+      <div className="text-sm text-slate-600 dark:text-slate-300">{message}</div>
+      <div className="mt-6 flex justify-end gap-2">
+        <button className="btn-ghost" onClick={onClose} disabled={busy}>Cancel</button>
+        <button className={tone === 'danger' ? 'btn-danger' : 'btn-primary'} onClick={onConfirm} disabled={busy}>
+          {busy && <Spinner className="size-4" />} {confirmLabel}
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
 export function Toaster() {
   const { toasts } = useUi()
   return (
@@ -101,8 +141,8 @@ export function Toaster() {
         <div
           key={t.id}
           className={cn(
-            'pointer-events-auto rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg',
-            t.tone === 'error' ? 'bg-red-600' : 'bg-neutral-900 dark:bg-neutral-700',
+            'pointer-events-auto rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lift',
+            t.tone === 'error' ? 'bg-rose-600' : 'bg-slate-900 dark:bg-slate-700',
           )}
         >
           {t.message}

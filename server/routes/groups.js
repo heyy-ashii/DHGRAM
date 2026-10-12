@@ -9,8 +9,9 @@ import { User } from '../models/User.js';
 import { AppError, asyncHandler } from '../utils/AppError.js';
 
 // Student group chats. Any signed-in student can start a group and add other
-// students; there is no admin and no owner-only powers. Membership lives on the
-// group document, so reads stay to a single query on every datastore.
+// students. The creator is the group owner: only they can remove members or
+// delete the group, while any member can leave. Membership lives on the group
+// document, so reads stay to a single query on every datastore.
 const router = Router();
 router.use(protect);
 
@@ -35,6 +36,7 @@ async function shapeGroup(group, userId) {
   return {
     _id: group._id,
     name: group.name,
+    createdBy: group.createdBy,
     members,
     memberCount: members.length,
     mine: String(group.createdBy) === String(userId),
@@ -168,6 +170,40 @@ router.delete(
     if (remaining.length < 1) throw new AppError('A group needs at least one member', 400);
     group.members = remaining;
     await group.save();
+    res.status(204).end();
+  }),
+);
+
+// Remove another member. Only the creator may do this; the creator cannot remove
+// themselves here (they leave via DELETE /:id/members/me or delete the group).
+router.delete(
+  '/:id/members/:userId',
+  validate(z.object({ id: objectId, userId: objectId }), 'params'),
+  asyncHandler(async (req, res) => {
+    const me = String(req.user._id);
+    const target = String(req.params.userId);
+    const group = await loadGroup(req.params.id, me);
+    if (String(group.createdBy) !== me) throw new AppError('Only the group creator can remove members', 403);
+    if (target === me) throw new AppError('Leave the group instead of removing yourself', 400);
+    if (!isMember(group, target)) throw new AppError('That member is not in the group', 404);
+    group.members = (group.members ?? []).map(String).filter((id) => id !== target);
+    await group.save();
+    res.json({ status: 'success', data: { group: await shapeGroup(plain(group), me) } });
+  }),
+);
+
+// Delete a group and its history. Only the creator may do this; every member is
+// dropped from the conversation at once.
+router.delete(
+  '/:id',
+  validate(z.object({ id: objectId }), 'params'),
+  asyncHandler(async (req, res) => {
+    const me = String(req.user._id);
+    const group = await Group.findById(req.params.id);
+    if (!group || !isMember(group, me)) throw new AppError('Group not found', 404);
+    if (String(group.createdBy) !== me) throw new AppError('Only the group creator can delete this group', 403);
+    await GroupMessage.deleteMany({ group: group._id });
+    await group.deleteOne();
     res.status(204).end();
   }),
 );
