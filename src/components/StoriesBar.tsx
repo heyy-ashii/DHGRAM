@@ -202,11 +202,13 @@ function Ring({ unseen, children }: { unseen: boolean; children: ReactNode }) {
   return (
     <span
       className={cn(
-        'grid size-16 place-items-center rounded-full p-0.5',
-        unseen ? 'bg-gradient-to-tr from-accent via-pink-500 to-brand' : 'bg-ink-200 dark:bg-ink-700',
+        'grid size-[68px] place-items-center rounded-full p-[3px]',
+        unseen
+          ? 'bg-[conic-gradient(from_140deg,#f9ce34,#ee2a7b,#6228d7,#f9ce34)]'
+          : 'bg-ink-200 dark:bg-ink-700',
       )}
     >
-      <span className="grid size-full place-items-center rounded-full bg-ink-50 dark:bg-ink-950">{children}</span>
+      <span className="grid size-full place-items-center rounded-full bg-ink-50 p-[2px] dark:bg-ink-950">{children}</span>
     </span>
   )
 }
@@ -240,7 +242,7 @@ export default function StoriesBar({ groups }: { groups: StoryGroup[] }) {
 
   return (
     <div className="border-b border-ink-200 bg-white dark:border-ink-800 dark:bg-ink-900">
-      <div className="flex gap-4 overflow-x-auto px-4 py-4">
+      <div className="no-scrollbar flex gap-4 overflow-x-auto px-4 py-4">
         {user && (
           <div className="flex w-16 shrink-0 flex-col items-center gap-1.5">
             <button

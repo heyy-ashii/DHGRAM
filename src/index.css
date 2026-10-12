@@ -150,6 +150,31 @@ h3 {
   }
 }
 
+/* The big heart that blooms when a post is double-tapped, like Instagram. */
+@keyframes heart-burst {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  35% {
+    transform: scale(0.96);
+  }
+  55% {
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
 .animate-rise {
   animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -159,11 +184,15 @@ h3 {
 .animate-pop {
   animation: pop 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+.heart-burst {
+  animation: heart-burst 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .animate-rise,
   .animate-float,
-  .animate-pop {
+  .animate-pop,
+  .heart-burst {
     animation: none;
   }
   html {

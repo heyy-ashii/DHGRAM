@@ -1,5 +1,5 @@
-import { Heart, MoreHorizontal, Pencil, Send, Trash2 } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { Heart, MessageCircle, MoreHorizontal, Pencil, Send, Share2, Trash2 } from 'lucide-react'
+import { useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import Avatar from './Avatar'
 import { Spinner } from './ui'
@@ -64,6 +64,10 @@ export function PostCard({ post, onChange, index = 0 }: { post: Post; onChange: 
   const [draft, setDraft] = useState(post.body)
   const [menu, setMenu] = useState(false)
   const [busy, setBusy] = useState(false)
+  // Instagram-style: a quick second tap on the thought fires the big heart.
+  const [burst, setBurst] = useState(false)
+  const lastTap = useRef(0)
+  const burstTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const canEdit = post.mine
   const canDelete = post.mine
@@ -81,6 +85,39 @@ export function PostCard({ post, onChange, index = 0 }: { post: Post; onChange: 
     }
   }
 
+  const like = async () => {
+    try {
+      await api(`/posts/${post._id}/like`, { method: 'POST' })
+      onChange()
+    } catch (err) {
+      toast(errorMessage(err), 'error')
+    }
+  }
+
+  const doubleTapLike = () => {
+    const now = Date.now()
+    const isDouble = now - lastTap.current < 300
+    lastTap.current = now
+    if (!isDouble || !user || post.likedByMe) return
+    setBurst(true)
+    if (burstTimer.current) clearTimeout(burstTimer.current)
+    burstTimer.current = setTimeout(() => setBurst(false), 800)
+    like()
+  }
+
+  const share = async () => {
+    const url = `${window.location.origin}/u/${post.author.username}`
+    try {
+      if (navigator.share) await navigator.share({ title: post.author.name || 'DHGRAM', url })
+      else {
+        await navigator.clipboard.writeText(url)
+        toast('Link copied')
+      }
+    } catch {
+      /* the user dismissed the share sheet */
+    }
+  }
+
   const saveEdit = (e: FormEvent) => {
     e.preventDefault()
     if (!draft.trim()) return
@@ -92,12 +129,12 @@ export function PostCard({ post, onChange, index = 0 }: { post: Post; onChange: 
 
   return (
     <article
-      className={cn('card animate-rise p-4 transition hover:shadow-lift sm:p-5', post.hidden && 'opacity-70')}
+      className={cn('card animate-rise overflow-hidden transition hover:shadow-lift', post.hidden && 'opacity-70')}
       style={{ animationDelay: `${Math.min(index, 8) * 55}ms` }}
     >
-      <header className="flex items-center justify-between gap-3">
+      <header className="flex items-center justify-between gap-3 px-4 pt-4">
         <Link to={`/u/${post.author.username}`} className="flex min-w-0 items-center gap-3">
-          <Avatar user={post.author} size="sm" />
+          <Avatar user={post.author} size="md" />
           <div className="min-w-0">
             <p className="truncate text-sm font-bold">{post.author.name || 'Student'}</p>
             <p className="truncate text-xs text-ink-400">
@@ -144,13 +181,13 @@ export function PostCard({ post, onChange, index = 0 }: { post: Post; onChange: 
       </header>
 
       {post.hidden && (
-        <p className="mt-3 rounded-xl bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+        <p className="mx-4 mt-3 rounded-xl bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:bg-amber-950 dark:text-amber-300">
           Hidden from the public feed
         </p>
       )}
 
       {editing ? (
-        <form onSubmit={saveEdit} className="mt-3">
+        <form onSubmit={saveEdit} className="px-4 py-3">
           <textarea className="input min-h-24" value={draft} maxLength={2000} onChange={(e) => setDraft(e.target.value)} />
           <div className="mt-2 flex justify-end gap-2">
             <button
@@ -169,32 +206,42 @@ export function PostCard({ post, onChange, index = 0 }: { post: Post; onChange: 
           </div>
         </form>
       ) : (
-        <p className="mt-3 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-ink-800 dark:text-ink-100">
-          {post.body}
-        </p>
+        <div className="relative select-none px-4 py-3" onMouseDown={doubleTapLike}>
+          <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed text-ink-800 dark:text-ink-100">{post.body}</p>
+          {burst && (
+            <span className="pointer-events-none absolute inset-0 grid place-items-center" aria-hidden>
+              <Heart className="heart-burst size-24 fill-red-500 text-red-500 drop-shadow-lg" />
+            </span>
+          )}
+        </div>
       )}
 
-      <footer className="mt-3 flex items-center gap-1">
+      <footer className="flex items-center gap-1 border-t border-ink-100 px-3 py-2 dark:border-ink-800">
         <button
           className={cn(
             'group inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition active:scale-90',
             post.likedByMe
-              ? 'bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400'
+              ? 'text-red-500'
               : 'text-ink-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/40',
           )}
           disabled={busy || !user}
-          onClick={() => run(() => api(`/posts/${post._id}/like`, { method: 'POST' }), post.likedByMe ? 'Like removed' : 'Liked')}
+          onClick={() => (post.likedByMe ? run(() => api(`/posts/${post._id}/like`, { method: 'POST' }), 'Like removed') : like())}
           aria-label={post.likedByMe ? 'Unlike' : 'Like'}
         >
-          <Heart className={cn('size-4 transition group-active:scale-125', post.likedByMe && 'animate-pop fill-current')} />
+          <Heart className={cn('size-5 transition group-active:scale-125', post.likedByMe && 'animate-pop fill-current')} />
           <span className="tabular-nums">{post.likes}</span>
         </button>
+
+        <button className="btn-ghost px-3 py-1.5 text-ink-400" onClick={share} aria-label="Share">
+          <Share2 className="size-5" />
+        </button>
+
         {!post.mine && (
           <Link
             to={`/u/${post.author.username}`}
-            className="ml-auto text-xs font-semibold text-ink-400 transition hover:text-brand"
+            className="ml-auto inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold text-ink-400 transition hover:text-brand"
           >
-            View profile →
+            <MessageCircle className="size-5" /> <span className="hidden sm:inline">Profile</span>
           </Link>
         )}
       </footer>

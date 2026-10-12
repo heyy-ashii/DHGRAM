@@ -16,7 +16,7 @@ export default function Home() {
   const posts = thoughts?.data.posts ?? []
 
   return (
-    <div className="mx-auto max-w-2xl pb-16 sm:px-4">
+    <div className="mx-auto max-w-lg pb-16 sm:px-4">
       {!user && (
         <section className="relative mx-4 mt-6 overflow-hidden rounded-[2rem] border border-ink-200/70 bg-white/70 p-8 text-center backdrop-blur sm:mx-0 sm:p-10 dark:border-ink-800 dark:bg-ink-900/60">
           <span className="eyebrow justify-center">

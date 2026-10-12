@@ -16,7 +16,7 @@ export default function Feed() {
   const posts = data?.data.posts ?? []
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto max-w-lg px-4 py-8">
       <header className="mb-7">
         <span className="eyebrow">
           <Sparkles className="size-3.5" /> Community
