@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle2, Flag, Trash2, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
