@@ -1,6 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
-import type { GroupSummary, MessageThread, PeerMessage, PostList, Story, StoryGroup, User, UserDirectory } from './types'
+import type { GroupSummary, MessageThread, PeerMessage, PostList, Stats, Story, StoryGroup, User, UserDirectory } from './types'
+
+export const useStats = () =>
+  useQuery({
+    queryKey: ['admin', 'stats'],
+    queryFn: () => api<{ data: Stats }>('/admin/stats').then((r) => r.data),
+    refetchInterval: 30000,
+  })
 
 export const useStories = () =>
   useQuery({

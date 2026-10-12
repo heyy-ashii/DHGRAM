@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { RequireAuth } from './components/Guards'
+import { RequireAdmin, RequireAuth } from './components/Guards'
 import PublicLayout from './components/PublicLayout'
 import { PageSpinner } from './components/ui'
 import About from './pages/About'
@@ -13,11 +13,26 @@ import NotFound from './pages/NotFound'
 const Account = lazy(() => import('./pages/Account'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Messages = lazy(() => import('./pages/Messages'))
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
+const AdminUsers = lazy(() => import('./pages/admin/Users'))
 
 export default function App() {
   return (
     <Suspense fallback={<PageSpinner />}>
       <Routes>
+        <Route
+          path="admin"
+          element={
+            <RequireAdmin>
+              <AdminLayout />
+            </RequireAdmin>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Route>
         <Route element={<PublicLayout />}>
           <Route index element={<Home />} />
           <Route path="feed" element={<Feed />} />
@@ -53,7 +68,6 @@ export default function App() {
               </RequireAuth>
             }
           />
-          <Route path="admin/*" element={<Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

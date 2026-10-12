@@ -1,5 +1,4 @@
 import { Code2, LogOut, MessageSquare, Timer, Users } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import AuthPanel from './AuthPanel'
 import BrandName from './BrandName'
 import { useAuth } from '../context/AuthContext'
@@ -85,9 +84,6 @@ function AuthSection() {
       <h3 className="font-bold">Your account</h3>
       <p className="mb-4 text-sm text-neutral-500">You are signed in as {user.name} (@{user.username}).</p>
       <div className="flex flex-wrap gap-3">
-        <Link to={`/u/${user.username}`} className="btn-outline">
-          View profile
-        </Link>
         <button type="button" className="btn-ghost text-red-600 hover:bg-red-50 dark:hover:bg-red-950" onClick={async () => { await logout(); toast('Signed out') }}>
           <LogOut className="size-4" /> Log out
         </button>

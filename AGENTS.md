@@ -94,9 +94,24 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
   student↔admin support thread. Students use `GET/POST /chat/me*`; admins use
   `/chat/conversations*` (guarded by `restrictTo('admin')`).
 - The UI for it lives **only inside the Messages page**: `AdminChat` (student view)
-  and `SupportInbox` (admin view) in `src/components/`. There is no `/admin` route
-  and no floating chat widget — `Messages.tsx` branches on `isAdmin` to render the
-  right side. Admins land on `/messages` after login.
+  and `SupportInbox` (admin view) in `src/components/`. `Messages.tsx` branches on
+  `isAdmin` to render the right side. Admins land on `/messages` after login, and
+  reach the wider admin area from the account menu.
+- The daily cleanup cron (`vercel.json` → `/api/v1/chat/cron/cleanup`) trims both
+  peer and support messages.
+
+## Admin panel
+
+- `server/routes/admin.js` (`/api/v1/admin`, `protect` + `restrictTo('admin')`)
+  backs the dashboard counters (`/admin/stats`) and user administration
+  (`/admin/users` list/create/update/delete). Deleting a user removes their posts,
+  stories, support thread, peer chats and created groups; Postgres cascades, Mongo
+  and Sheets are cleaned up explicitly.
+- The UI is `src/pages/admin/` (`AdminLayout`, `Dashboard`, `Users`), mounted at
+  `/admin` and guarded by `RequireAdmin` in `src/App.tsx`. The support inbox is
+  **not** duplicated there — it stays in Messages (`/messages`), linked from the
+  admin sidebar and dashboard.
+- Only admins see the "Admin panel" entry in the account menu (`Navbar.tsx`).
 - The daily cleanup cron (`vercel.json` → `/api/v1/chat/cron/cleanup`) trims both
   peer and support messages.
 
@@ -107,6 +122,8 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
   and marks unseen ones. Views are one row per (story, viewer).
 - Profile pictures live on `app_users.avatar`; the public profile endpoint is
   `GET /auth/users/:username`, and `/posts?author=<id>` backs a profile's thoughts.
+- Posting a thought happens **only** on the Thoughts feed (`/feed`, `Composer`);
+  the home page and profile show thoughts read-only.
 - Images are downscaled in the browser (`src/lib/image.ts`) and stored as data
   URLs, so there is no object storage. The API caps avatar/story payloads at
   ~1.5 MB, so raise both the client compression and the Zod limit together.

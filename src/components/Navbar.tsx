@@ -1,4 +1,4 @@
-import { Home, LogIn, LogOut, MessageCircle, MessageSquare, Moon, Sun, User as UserIcon, type LucideIcon } from 'lucide-react'
+import { Home, LayoutDashboard, LogIn, LogOut, MessageCircle, MessageSquare, Moon, Sun, User as UserIcon, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import Avatar from './Avatar'
@@ -17,7 +17,7 @@ const links: NavItem[] = [
 
 export default function Navbar() {
   const { theme, toggleTheme } = useUi()
-  const { user, logout } = useAuth()
+  const { user, isAdmin, logout } = useAuth()
   const [menu, setMenu] = useState(false)
   const navItems: NavItem[] = [...links, { key: 'profile', to: user ? `/u/${user.username}` : '/login', label: 'Profile', icon: UserIcon }]
 
@@ -47,6 +47,11 @@ export default function Navbar() {
             <button className="btn-ghost p-2" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
               {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </button>
+            {isAdmin && (
+              <Link to="/admin" className="btn-outline hidden px-3 sm:inline-flex">
+                <LayoutDashboard className="size-4" /> Admin
+              </Link>
+            )}
             {user ? (
               <div className="relative">
                 <button className="rounded-full" onClick={() => setMenu((m) => !m)} aria-label="Account menu">
@@ -63,6 +68,11 @@ export default function Navbar() {
                       <Link to={`/u/${user.username}`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800" onClick={() => setMenu(false)}>
                         <UserIcon className="size-4" /> My profile
                       </Link>
+                      {isAdmin && (
+                        <Link to="/admin" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800" onClick={() => setMenu(false)}>
+                          <LayoutDashboard className="size-4" /> Admin panel
+                        </Link>
+                      )}
                       <Link to="/account" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800" onClick={() => setMenu(false)}>
                         Account settings
                       </Link>

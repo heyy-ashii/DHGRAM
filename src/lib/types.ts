@@ -100,3 +100,11 @@ export interface UserDirectory {
   pages: number
   data: { users: PeerUser[] }
 }
+
+export interface Stats {
+  users: number
+  admins: number
+  disabled: number
+  openChats: number
+  unreadMessages: number
+}
