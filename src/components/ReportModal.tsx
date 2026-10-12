@@ -27,11 +27,13 @@ export function ReportButton({
   targetId,
   className,
   label = 'Report',
+  preview,
 }: {
   kind: ReportKind
   targetId: string
   className?: string
   label?: string
+  preview?: string
 }) {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
@@ -46,7 +48,7 @@ export function ReportButton({
         <Flag className="size-5" />
         {label && <span className="hidden sm:inline">{label}</span>}
       </button>
-      <ReportModal open={open} onClose={() => setOpen(false)} kind={kind} targetId={targetId} />
+      <ReportModal open={open} onClose={() => setOpen(false)} kind={kind} targetId={targetId} preview={preview} />
     </>
   )
 }

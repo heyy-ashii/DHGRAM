@@ -164,10 +164,11 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
   `server/routes/auth.js` signup). The name is deliberately **not** asked for:
   students don't reliably know its exact case/spacing as written on the sheet.
   The roster name still seeds the profile and the derived username, and duplicate
-  names get a numeric suffix (`name.2`) instead of a hard 409. The initial password
-  is registration number + admission number (e.g. `2500013411`); users are told to
-  change it after first login. Password reset still uses email OTP
-  (`requestResetCode` / `resetPassword`).
+  names get a numeric suffix (`name.2`) instead of a hard 409. The student now
+  **chooses their own password** on the signup form (minimum 8 characters); if the
+  field is omitted the server falls back to the roster default of registration
+  number + admission number (e.g. `2500013411`). Password reset still uses email
+  OTP (`requestResetCode` / `resetPassword`).
 
 ## UI & design system
 

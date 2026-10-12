@@ -3,7 +3,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 process.env.NODE_ENV = 'test';
-process.env.ROSTER_CSV = 'AD.NO,REG. NO,NAME,PHONE,EMAIL\n3411,250001,New Student,,\n9999,250009,Lock User,,\n';
+process.env.ROSTER_CSV = 'AD.NO,REG. NO,NAME,PHONE,EMAIL\n3411,250001,New Student,,\n3412,250002,Second Student,,\n9999,250009,Lock User,,\n';
 // This suite runs on the in-memory MongoDB. Blank the other datastore settings
 // that .env may carry so tests never reach a hosted database. Empty strings are
 // used deliberately: dotenv does not override keys that already exist.
@@ -67,6 +67,18 @@ describe('auth', () => {
     const badReg = await request(app).post('/api/v1/auth/signup').send({ regNo: '1234' });
     expect(badReg.status).toBe(403);
     expect((await request(app).post('/api/v1/auth/signup').send({})).status).toBe(400);
+  });
+
+  it('uses a password chosen at signup when one is supplied', async () => {
+    const ok = await request(app)
+      .post('/api/v1/auth/signup')
+      .send({ regNo: '250002', password: 'chosen-pass-123' });
+    expect(ok.status).toBe(201);
+    expect((await login('second.student', 'chosen-pass-123')).res.status).toBe(200);
+    expect((await login('second.student', '2500023412')).res.status).toBe(401);
+
+    const short = await request(app).post('/api/v1/auth/signup').send({ regNo: '250002', password: 'short' });
+    expect(short.status).toBe(400);
   });
 
   it('rejects bad credentials and locks after repeated failures', async () => {
