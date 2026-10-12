@@ -130,13 +130,16 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
 
 ## Sign-up & auth
 
-- Sign-up is **roster-verified**, not email OTP: the student enters their **name**
-  and **registration number**, and the server checks both against the *same row*
-  of the official student spreadsheet (`server/roster.js`, used by
-  `server/routes/auth.js` signup). The username is derived from the name and the
-  initial password is registration number + admission number (e.g. `2500013411`);
-  users are told to change it after first login. Password reset still uses email
-  OTP (`requestResetCode` / `resetPassword`).
+- Sign-up is **roster-verified**, not email OTP: the student enters only their
+  **registration number** and the server looks the row up by it in the official
+  student spreadsheet (`server/roster.js` `findStudentByRegNo`, used by
+  `server/routes/auth.js` signup). The name is deliberately **not** asked for:
+  students don't reliably know its exact case/spacing as written on the sheet.
+  The roster name still seeds the profile and the derived username, and duplicate
+  names get a numeric suffix (`name.2`) instead of a hard 409. The initial password
+  is registration number + admission number (e.g. `2500013411`); users are told to
+  change it after first login. Password reset still uses email OTP
+  (`requestResetCode` / `resetPassword`).
 
 ## UI & design system
 
