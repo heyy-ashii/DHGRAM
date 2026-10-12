@@ -32,6 +32,7 @@ export interface Report {
   handledBy?: string | null
   handledAt?: string | null
   createdAt: string
+  targetAuthor?: { _id: string; name: string; username: string } | null
 }
 
 export interface ReportList {
@@ -55,6 +56,13 @@ export interface Post {
 
 export interface PostList {
   results: number
+  total: number
+  page: number
+  pages: number
+  data: { posts: Post[] }
+}
+
+export interface AdminThoughtsList {
   total: number
   page: number
   pages: number

@@ -255,12 +255,44 @@ router.get(
         .lean(),
       Report.countDocuments(filter),
     ]);
+
+    // Resolve the account behind each report so an admin can act on the offender
+    // without leaving the queue. The author of a reported post/story is looked up
+    // in a couple of batched queries; a reported user is the target itself.
+    const postIds = reports.filter((r) => r.kind === 'post').map((r) => r.targetId);
+    const storyIds = reports.filter((r) => r.kind === 'story').map((r) => r.targetId);
+    const [posts, stories] = await Promise.all([
+      postIds.length ? Post.find({ _id: { $in: postIds } }).lean() : [],
+      storyIds.length ? Story.find({ _id: { $in: storyIds } }).lean() : [],
+    ]);
+    const authorOf = new Map();
+    for (const p of posts) authorOf.set(String(p._id), String(p.author));
+    for (const s of stories) authorOf.set(String(s._id), String(s.author));
+    const authorIds = [
+      ...new Set([
+        ...authorOf.values(),
+        ...reports.filter((r) => r.kind === 'user').map((r) => String(r.targetId)),
+      ]),
+    ];
+    const authors = authorIds.length ? await User.find({ _id: { $in: authorIds } }).select('name username').lean() : [];
+    const authorById = new Map(authors.map((u) => [String(u._id), u]));
+
     res.json({
       status: 'success',
       total,
       page,
       pages: Math.max(1, Math.ceil(total / limit)),
-      data: { reports },
+      data: {
+        reports: reports.map((r) => {
+          // A reported user is the target itself; otherwise the target row's author.
+          const authorId = r.kind === 'user' ? String(r.targetId) : authorOf.get(String(r.targetId));
+          const author = authorById.get(authorId);
+          return {
+            ...r,
+            targetAuthor: author ? { _id: author._id, name: author.name ?? '', username: author.username ?? '' } : null,
+          };
+        }),
+      },
     });
   }),
 );
@@ -295,6 +327,67 @@ router.patch(
     res.json({
       status: 'success',
       data: { report: typeof report.toObject === 'function' ? report.toObject() : report },
+    });
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// Thoughts (posts) moderation
+// ---------------------------------------------------------------------------
+
+const postFilterQuery = z.object({
+  q: z.string().trim().max(100).optional(),
+  hidden: z.enum(['true', 'false']).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+router.get(
+  '/posts',
+  validate(postFilterQuery, 'query'),
+  asyncHandler(async (req, res) => {
+    const { q, hidden, page, limit } = req.validated.query;
+    const filter = {};
+    if (hidden) filter.hidden = hidden === 'true';
+    if (q) {
+      const rx = new RegExp(escapeRegex(q), 'i');
+      // Authors are matched by name/username too, so a search for a student shows
+      // every thought they wrote. The author ids are resolved first because a
+      // joined/embedded filter is not portable across the three datastores.
+      const authors = await User.find({ $or: [{ name: rx }, { username: rx }] })
+        .select('_id')
+        .lean();
+      const ids = authors.map((a) => a._id);
+      filter.$or = ids.length ? [{ body: rx }, { author: { $in: ids } }] : [{ body: rx }];
+    }
+    const [posts, total] = await Promise.all([
+      Post.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate('author', 'name username avatar')
+        .lean(),
+      Post.countDocuments(filter),
+    ]);
+    res.json({
+      status: 'success',
+      total,
+      page,
+      pages: Math.max(1, Math.ceil(total / limit)),
+      data: {
+        posts: posts.map((p) => {
+          const author = p.author && typeof p.author === 'object' ? p.author : { _id: p.author };
+          const likes = Array.isArray(p.likes) ? p.likes : [];
+          return {
+            _id: p._id,
+            body: p.body,
+            author: { _id: author._id, name: author.name ?? '', username: author.username ?? '', avatar: author.avatar ?? null },
+            likes: likes.length,
+            hidden: Boolean(p.hidden),
+            createdAt: p.createdAt,
+          };
+        }),
+      },
     });
   }),
 );
