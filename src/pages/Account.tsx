@@ -51,7 +51,7 @@ export default function Account() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold">My Account</h1>
-          <p className="text-sm text-slate-500">{user!.email ?? `@${user!.username}`}</p>
+          <p className="text-sm text-ink-500">{user!.email ?? `@${user!.username}`}</p>
         </div>
         <div className="flex gap-2">
           <button
