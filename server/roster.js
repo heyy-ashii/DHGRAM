@@ -50,6 +50,14 @@ export async function loadRoster({ fresh = false } = {}) {
   return rows;
 }
 
+export async function findStudentByRegNo(regNo) {
+  const rows = await loadRoster();
+  const wantRegNo = normRegNo(regNo);
+  return rows.find((r) => normRegNo(r.regNo) === wantRegNo) ?? null;
+}
+
+// Backwards-compatible name + registration lookup, kept for callers/tests that
+// still pass a name.
 export async function findStudent(name, regNo) {
   const rows = await loadRoster();
   const wantName = normName(name);

@@ -18,13 +18,11 @@ export default function Dashboard() {
       <h1 className="text-2xl font-bold">Dashboard</h1>
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {cards.map((c) => (
-          <Link key={c.label} to={c.to} className="card card-hover p-5">
-            <span className="surface-brand grid size-11 place-items-center rounded-2xl">
-              <c.icon className="size-5" />
-            </span>
+          <Link key={c.label} to={c.to} className="card p-5 transition hover:border-brand">
+            <c.icon className="size-6 text-brand" />
             <p className="mt-4 text-3xl font-extrabold">{c.value}</p>
             <p className="font-medium">{c.label}</p>
-            <p className="text-sm text-slate-500">{c.sub}</p>
+            <p className="text-sm text-ink-500">{c.sub}</p>
           </Link>
         ))}
       </div>

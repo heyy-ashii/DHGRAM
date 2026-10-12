@@ -40,11 +40,12 @@ const login = async (identifier, password) => {
 };
 
 describe('auth', () => {
-  it('creates an account for a student on the roster', async () => {
+  it('creates an account for a student on the roster from just the registration number', async () => {
     const agent = request.agent(app);
-    const ok = await agent.post('/api/v1/auth/signup').send({ name: 'New Student', regNo: '250001' });
+    const ok = await agent.post('/api/v1/auth/signup').send({ regNo: '250001' });
     expect(ok.status).toBe(201);
     expect(ok.body.data.user.username).toBe('new.student');
+    expect(ok.body.data.user.name).toBe('New Student');
     expect(ok.body.data.user.role).toBe('user');
     expect(ok.body.data.user).not.toHaveProperty('password');
     expect(ok.headers['set-cookie'][0]).toMatch(/HttpOnly/);
@@ -55,15 +56,17 @@ describe('auth', () => {
     // The registration + admission number is the initial password.
     expect((await login('new.student', '2500013411')).res.status).toBe(200);
 
-    // A second signup for the same student is rejected.
-    expect((await request(app).post('/api/v1/auth/signup').send({ name: 'New Student', regNo: '250001' })).status).toBe(409);
+    // A repeated signup for the same registration number does not collide: the
+    // username is suffixed so the second student sharing a name can register.
+    const again = await request(app).post('/api/v1/auth/signup').send({ regNo: '250001' });
+    expect(again.status).toBe(201);
+    expect(again.body.data.user.username).toBe('new.student.2');
   });
 
-  it('rejects a name or registration number that is not on the roster', async () => {
-    const badName = await request(app).post('/api/v1/auth/signup').send({ name: 'Nobody Here', regNo: '250001' });
-    expect(badName.status).toBe(403);
-    const badAdNo = await request(app).post('/api/v1/auth/signup').send({ name: 'New Student', regNo: '1234' });
-    expect(badAdNo.status).toBe(403);
+  it('rejects a registration number that is not on the roster', async () => {
+    const badReg = await request(app).post('/api/v1/auth/signup').send({ regNo: '1234' });
+    expect(badReg.status).toBe(403);
+    expect((await request(app).post('/api/v1/auth/signup').send({})).status).toBe(400);
   });
 
   it('rejects bad credentials and locks after repeated failures', async () => {

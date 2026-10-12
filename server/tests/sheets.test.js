@@ -224,7 +224,7 @@ describe('DHGRAM on Google Sheets only', () => {
 
   it('creates an account from the roster, logs in and reads /me', async () => {
     const agent = request.agent(app);
-    const ok = await agent.post('/api/v1/auth/signup').send({ name: 'New Student', regNo: '250001' });
+    const ok = await agent.post('/api/v1/auth/signup').send({ regNo: '250001' });
     expect(ok.status).toBe(201);
     expect(ok.body.data.user.username).toBe('new.student');
     expect(ok.body.data.user.role).toBe('user');
@@ -240,9 +240,8 @@ describe('DHGRAM on Google Sheets only', () => {
     expect(bad.status).toBe(401);
   });
 
-  it('rejects a name or registration number that is not on the roster', async () => {
-    expect((await request(app).post('/api/v1/auth/signup').send({ name: 'Nobody Here', regNo: '250001' })).status).toBe(403);
-    expect((await request(app).post('/api/v1/auth/signup').send({ name: 'New Student', regNo: '999999' })).status).toBe(403);
+  it('rejects a registration number that is not on the roster', async () => {
+    expect((await request(app).post('/api/v1/auth/signup').send({ regNo: '999999' })).status).toBe(403);
   });
 
   it('seeds an admin account used by the support chat flow', async () => {
@@ -256,7 +255,7 @@ describe('DHGRAM on Google Sheets only', () => {
 
   it('runs the chat flow', async () => {
     const user = request.agent(app);
-    await user.post('/api/v1/auth/signup').send({ name: 'Chat Student', regNo: '250002' });
+    await user.post('/api/v1/auth/signup').send({ regNo: '250002' });
 
     const sent = await user.post('/api/v1/chat/me/messages').send({ body: 'Hello admin' });
     expect(sent.status).toBe(201);

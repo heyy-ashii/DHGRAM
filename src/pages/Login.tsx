@@ -16,7 +16,7 @@ export default function Login({ initialMode = 'login' }: { initialMode?: AuthMod
   if (user) return <Navigate to={next ?? (user.role === 'admin' ? '/messages' : '/')} replace />
 
   return (
-    <div className="mx-auto max-w-md px-4 py-12">
+    <div className="px-4">
       <AuthPanel initialMode={initialMode} onSuccess={(u) => navigate(next ?? (u.role === 'admin' ? '/messages' : '/'), { replace: true })} />
     </div>
   )

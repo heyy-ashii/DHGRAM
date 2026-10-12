@@ -21,7 +21,7 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen md:grid md:grid-cols-[240px_1fr]">
-      <aside className="border-b border-slate-200 bg-white md:sticky md:top-0 md:h-screen md:border-b-0 md:border-r dark:border-slate-800 dark:bg-slate-950">
+      <aside className="border-b border-ink-200 bg-white md:sticky md:top-0 md:h-screen md:border-b-0 md:border-r dark:border-ink-800 dark:bg-ink-950">
         <div className="flex h-16 items-center justify-between px-4">
           <Logo to="/admin" />
           <span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-semibold text-brand">Admin</span>
@@ -36,29 +36,29 @@ export default function AdminLayout() {
                 cn(
                   'flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition',
                   isActive
-                    ? 'surface-brand font-semibold'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
+                    ? 'bg-ink-900 text-white dark:bg-white dark:text-ink-900'
+                    : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800',
                 )
               }
             >
               <i.icon className="size-4" /> {i.label}
-              {Boolean(i.badge) && <span className="ml-auto rounded-full bg-rose-600 px-1.5 text-xs text-white">{i.badge}</span>}
+              {Boolean(i.badge) && <span className="ml-auto rounded-full bg-red-600 px-1.5 text-xs text-white">{i.badge}</span>}
             </NavLink>
           ))}
         </nav>
         <div className="hidden space-y-1 px-3 pt-6 md:block">
-          <NavLink to="/" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+          <NavLink to="/" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800">
             <ExternalLink className="size-4" /> View public site
           </NavLink>
-          <button onClick={toggleTheme} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+          <button onClick={toggleTheme} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800">
             {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />} {theme === 'dark' ? 'Light mode' : 'Dark mode'}
           </button>
         </div>
       </aside>
       <div className="min-w-0">
-        <header className="flex h-16 items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 dark:border-slate-800 dark:bg-slate-950">
-          <p className="truncate text-sm text-slate-500">
-            Signed in as <span className="font-semibold text-slate-900 dark:text-white">{user?.name}</span>
+        <header className="flex h-16 items-center justify-between gap-4 border-b border-ink-200 bg-white px-6 dark:border-ink-800 dark:bg-ink-950">
+          <p className="truncate text-sm text-ink-500">
+            Signed in as <span className="font-semibold text-ink-900 dark:text-white">{user?.name}</span>
           </p>
           <button
             className="btn-outline px-3"

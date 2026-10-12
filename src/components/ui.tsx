@@ -1,4 +1,4 @@
-import { Loader2, X, type LucideIcon } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Loader2, Sparkles, X, type LucideIcon } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
 import { useUi } from '../context/UiContext'
 import { cn } from '../lib/utils'
@@ -15,16 +15,49 @@ export function PageSpinner() {
   )
 }
 
+/* A shimmering placeholder used while a list is loading. */
+export function Skeleton({ className }: { className?: string }) {
+  return <div className={cn('animate-pulse rounded-2xl bg-ink-100 dark:bg-ink-800/70', className)} aria-hidden />
+}
+
+export function PostSkeleton() {
+  return (
+    <div className="card p-5">
+      <div className="flex items-center gap-3">
+        <Skeleton className="size-9 rounded-full" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-3 w-32" />
+          <Skeleton className="h-2.5 w-24" />
+        </div>
+      </div>
+      <div className="mt-4 space-y-2">
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-4/5" />
+      </div>
+    </div>
+  )
+}
+
+export function FeedSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <div className="flex flex-col gap-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <PostSkeleton key={i} />
+      ))}
+    </div>
+  )
+}
+
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
     <div className="card mx-auto max-w-md p-8 text-center">
-      <span className="surface-brand mx-auto grid size-12 place-items-center rounded-2xl">
-        <X className="size-6" />
+      <span className="mx-auto grid size-12 place-items-center rounded-full bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400">
+        <AlertCircle className="size-6" />
       </span>
-      <p className="mt-3 font-semibold">Something went wrong</p>
-      <p className="mt-1 text-sm text-slate-500">{message}</p>
+      <p className="mt-4 font-semibold">Something went wrong</p>
+      <p className="mt-1 text-sm text-ink-500">{message}</p>
       {onRetry && (
-        <button className="btn-outline mt-4" onClick={onRetry}>
+        <button className="btn-outline mt-5" onClick={onRetry}>
           Try again
         </button>
       )}
@@ -32,16 +65,22 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
   )
 }
 
-export function EmptyState({ title, children, icon: Icon }: { title: string; children?: ReactNode; icon?: LucideIcon }) {
+export function EmptyState({
+  title,
+  icon: Icon = Sparkles,
+  children,
+}: {
+  title: string
+  icon?: LucideIcon
+  children?: ReactNode
+}) {
   return (
     <div className="card mx-auto max-w-md p-10 text-center">
-      {Icon && (
-        <span className="surface-brand mx-auto mb-4 grid size-12 place-items-center rounded-2xl">
-          <Icon className="size-6" />
-        </span>
-      )}
-      <p className="font-semibold">{title}</p>
-      {children && <div className="mt-3 text-sm text-slate-500">{children}</div>}
+      <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-brand-soft text-brand dark:bg-brand/10">
+        <Icon className="size-7" />
+      </span>
+      <p className="mt-4 text-lg font-bold">{title}</p>
+      {children && <div className="mt-2 text-sm text-ink-500">{children}</div>}
     </div>
   )
 }
@@ -51,7 +90,7 @@ export function StatusBadge({ status }: { status: string }) {
     status === 'active' || status === 'open'
       ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-900'
       : status === 'disabled' || status === 'closed'
-        ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-900'
+        ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-900'
         : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-900'
   return <span className={cn('inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize', tone)}>{status}</span>
 }
@@ -81,16 +120,22 @@ export function Modal({
   }, [open, onClose])
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-ink-950/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      onMouseDown={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={cn('card max-h-[92vh] w-full overflow-y-auto rounded-b-none p-6 shadow-lift sm:rounded-2xl', wide ? 'sm:max-w-2xl' : 'sm:max-w-md')}
+        className={cn(
+          'card animate-rise max-h-[92vh] w-full overflow-y-auto rounded-b-none p-6 shadow-lift sm:rounded-3xl',
+          wide ? 'sm:max-w-2xl' : 'sm:max-w-md',
+        )}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">{title}</h2>
+          <h2 className="text-xl font-bold">{title}</h2>
           <button className="btn-ghost p-2" onClick={onClose} aria-label="Close">
             <X className="size-5" />
           </button>
@@ -122,7 +167,7 @@ export function ConfirmModal({
 }) {
   return (
     <Modal open={open} onClose={onClose} title={title}>
-      <div className="text-sm text-slate-600 dark:text-slate-300">{message}</div>
+      <div className="text-sm text-ink-600 dark:text-ink-300">{message}</div>
       <div className="mt-6 flex justify-end gap-2">
         <button className="btn-ghost" onClick={onClose} disabled={busy}>Cancel</button>
         <button className={tone === 'danger' ? 'btn-danger' : 'btn-primary'} onClick={onConfirm} disabled={busy}>
@@ -141,10 +186,11 @@ export function Toaster() {
         <div
           key={t.id}
           className={cn(
-            'pointer-events-auto rounded-2xl px-4 py-3 text-sm font-medium text-white shadow-lift',
-            t.tone === 'error' ? 'bg-rose-600' : 'bg-slate-900 dark:bg-slate-700',
+            'animate-rise pointer-events-auto flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-white shadow-lift',
+            t.tone === 'error' ? 'bg-red-600' : 'bg-ink-900 dark:bg-ink-800',
           )}
         >
+          {t.tone === 'error' ? <AlertCircle className="size-4" /> : <CheckCircle2 className="size-4" />}
           {t.message}
         </div>
       ))}
