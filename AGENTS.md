@@ -103,14 +103,19 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
 ## Admin panel
 
 - `server/routes/admin.js` (`/api/v1/admin`, `protect` + `restrictTo('admin')`)
-  backs the dashboard counters (`/admin/stats`) and user administration
-  (`/admin/users` list/create/update/delete). Deleting a user removes their posts,
-  stories, support thread, peer chats and created groups; Postgres cascades, Mongo
-  and Sheets are cleaned up explicitly.
-- The UI is `src/pages/admin/` (`AdminLayout`, `Dashboard`, `Users`), mounted at
-  `/admin` and guarded by `RequireAdmin` in `src/App.tsx`. The support inbox is
-  **not** duplicated there — it stays in Messages (`/messages`), linked from the
-  admin sidebar and dashboard.
+  backs the dashboard counters (`/admin/stats`), user administration
+  (`/admin/users` list/create/update/delete) and thought moderation
+  (`GET /admin/posts`, searchable by body or author name; hide/unhide and delete
+  reuse `PATCH/DELETE /posts/:id`). Deleting a user removes their posts, stories,
+  support thread, peer chats and created groups; Postgres cascades, Mongo and
+  Sheets are cleaned up explicitly.
+- The UI is `src/pages/admin/` (`AdminLayout`, `Dashboard`, `Users`, `Thoughts`,
+  `Reports`), mounted at `/admin` and guarded by `RequireAdmin` in `src/App.tsx`.
+  The support inbox is **not** duplicated there — it stays in Messages
+  (`/messages`), linked from the admin sidebar and dashboard.
+- `ModerationActions` (`src/components/ModerationActions.tsx`) is the single
+  suspend/disable/reinstate control; the Users table, the Reports queue and the
+  Thoughts list all mount it so an admin can act on an account inline.
 - Only admins see the "Admin panel" entry in the account menu (`Navbar.tsx`).
 - The daily cleanup cron (`vercel.json` → `/api/v1/chat/cron/cleanup`) trims both
   peer and support messages.
@@ -150,6 +155,9 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
   and marks unseen ones. Views are one row per (story, viewer).
 - Profile pictures live on `app_users.avatar`; the public profile endpoint is
   `GET /auth/users/:username`, and `/posts?author=<id>` backs a profile's thoughts.
+- **All profile editing lives in one place**: `/account` (`src/pages/Account.tsx`)
+  edits name, username, avatar and password. `/profile` is view-only and just
+  links to `/account` — do not add a second editor back into `Profile.tsx`.
 - Posting a thought happens **only** on the Thoughts feed (`/feed`, `Composer`);
   the home page and profile show thoughts read-only.
 - Images are downscaled in the browser (`src/lib/image.ts`) and stored as data

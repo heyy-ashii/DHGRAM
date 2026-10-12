@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Camera, Check, MessageCircle, MoreVertical, Trash2 } from 'lucide-react'
-import { useRef, useState, type ChangeEvent } from 'react'
+import { ArrowLeft, MessageCircle, MoreVertical, Trash2 } from 'lucide-react'
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import AboutPanel from '../components/AboutPanel'
 import Avatar from '../components/Avatar'
@@ -11,7 +11,6 @@ import { EmptyState, ErrorState, Modal, PageSpinner, Spinner } from '../componen
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
 import { api, errorMessage } from '../lib/api'
-import { compressImage } from '../lib/image'
 import type { MessageThread, Story, User } from '../lib/types'
 import { usePageMeta } from '../lib/usePageMeta'
 import { useMyStories, usePosts, useProfile } from '../lib/queries'
@@ -32,17 +31,8 @@ export default function Profile() {
   const { data: posts, isLoading: postsLoading, error: postsError, refetch } = usePosts({ author: viewUser?._id, limit: 30 })
   const { data: myStories } = useMyStories(isMe)
 
-  const [editing, setEditing] = useState(false)
   const [about, setAbout] = useState(false)
-  const [form, setForm] = useState({ name: '', username: '' })
   const [menu, setMenu] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  const openEditor = () => {
-    if (user) setForm({ name: user.name, username: user.username })
-    setEditing(true)
-  }
 
   const startChat = useMutation({
     mutationFn: (userId: string) => api<{ data: { conversation: MessageThread } }>('/messages/start', { method: 'POST', body: { userId } }),
@@ -53,47 +43,13 @@ export default function Profile() {
     onError: (err) => toast(errorMessage(err), 'error'),
   })
 
-  const saveProfile = async () => {
-    setBusy(true)
-    try {
-      const res = await api<{ data: { user: User } }>('/auth/update-me', { method: 'PATCH', body: form })
-      setUser(res.data.user)
-      toast('Profile updated')
-      setEditing(false)
-    } catch (err) {
-      toast(errorMessage(err), 'error')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const changePic = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    setBusy(true)
-    try {
-      const avatar = await compressImage(file, 512, 0.85)
-      const res = await api<{ data: { user: User } }>('/auth/update-me', { method: 'PATCH', body: { avatar } })
-      setUser(res.data.user)
-      toast('Profile picture updated')
-    } catch (err) {
-      toast(errorMessage(err), 'error')
-    } finally {
-      setBusy(false)
-    }
-  }
-
   const removePic = async () => {
-    setBusy(true)
     try {
       const res = await api<{ data: { user: User } }>('/auth/update-me', { method: 'PATCH', body: { avatar: '' } })
       setUser(res.data.user)
       toast('Profile picture removed')
     } catch (err) {
       toast(errorMessage(err), 'error')
-    } finally {
-      setBusy(false)
     }
   }
 
@@ -125,16 +81,6 @@ export default function Profile() {
       <header className="flex items-start gap-5">
         <div className="relative shrink-0">
           <Avatar user={viewUser} size="xl" />
-          {isMe && (
-            <button
-              className="absolute -bottom-1 -right-1 grid size-8 place-items-center rounded-full border-2 border-white bg-brand text-white dark:border-ink-950"
-              onClick={() => fileRef.current?.click()}
-              disabled={busy}
-              aria-label="Change profile picture"
-            >
-              {busy ? <Spinner className="size-4" /> : <Camera className="size-4" />}
-            </button>
-          )}
         </div>
 
         <div className="min-w-0 flex-1">
@@ -145,7 +91,7 @@ export default function Profile() {
             </div>
             {isMe ? (
               <div className="flex shrink-0 items-center gap-2">
-                <button className="btn-outline" onClick={openEditor}>Edit profile</button>
+                <Link className="btn-outline" to="/account">Edit profile</Link>
                 <div className="relative">
                   <button className="btn-ghost p-2.5" onClick={() => setMenu((m) => !m)} aria-label="More options">
                     <MoreVertical className="size-4" />
@@ -182,11 +128,9 @@ export default function Profile() {
         </div>
       </header>
 
-      {isMe && (
-        <div className="mt-6 flex flex-wrap gap-2">
-          <button className="btn-outline" onClick={openEditor}>Edit name & username</button>
-          {viewUser.avatar && <button className="btn-ghost" onClick={removePic} disabled={busy}>Remove picture</button>}
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={changePic} />
+      {isMe && viewUser.avatar && (
+        <div className="mt-6">
+          <button className="btn-ghost" onClick={removePic}>Remove picture</button>
         </div>
       )}
 
@@ -226,31 +170,6 @@ export default function Profile() {
           </div>
         )}
       </section>
-
-      <Modal open={editing} onClose={() => setEditing(false)} title="Edit profile">
-        <div className="space-y-4">
-          <div>
-            <label className="label" htmlFor="pf-name">Name</label>
-            <input id="pf-name" className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          </div>
-          <div>
-            <label className="label" htmlFor="pf-username">Username</label>
-            <input
-              id="pf-username"
-              className="input"
-              value={form.username}
-              pattern="[a-z0-9._]{3,30}"
-              onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase() })}
-            />
-          </div>
-          <div className="flex justify-end gap-2">
-            <button className="btn-ghost" onClick={() => setEditing(false)}>Cancel</button>
-            <button className="btn-primary" onClick={saveProfile} disabled={busy || !form.name.trim()}>
-              {busy ? <Spinner className="size-4" /> : <Check className="size-4" />} Save
-            </button>
-          </div>
-        </div>
-      </Modal>
 
       <Modal open={about} onClose={() => setAbout(false)} title="About DHGRAM" wide>
         <AboutPanel auth />
