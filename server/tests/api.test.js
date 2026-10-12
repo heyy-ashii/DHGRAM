@@ -650,4 +650,49 @@ describe('reports and moderation', () => {
     expect(stats.body.data.openReports).toBeGreaterThanOrEqual(0);
     expect(stats.body.data).toHaveProperty('suspended');
   });
+
+  it('lets an admin list, search, hide and delete thoughts', async () => {
+    const { agent: author } = await login('newbie', 'newpassword1');
+    const thought = (await author.post('/api/v1/posts').send({ body: 'a very searchable thought' })).body.data.post;
+
+    // Only admins can reach the moderation list.
+    expect((await author.get('/api/v1/admin/posts')).status).toBe(403);
+
+    const { agent: admin } = await login('admin', 'adminpass1');
+    const all = await admin.get('/api/v1/admin/posts?limit=100');
+    expect(all.status).toBe(200);
+    expect(all.body.data.posts.some((p) => p._id === thought._id)).toBe(true);
+
+    // Search matches the body and the author's username.
+    const byBody = await admin.get('/api/v1/admin/posts?q=searchable');
+    expect(byBody.body.data.posts.map((p) => p._id)).toContain(thought._id);
+    const byAuthor = await admin.get('/api/v1/admin/posts?q=newbie');
+    expect(byAuthor.body.data.posts.map((p) => p._id)).toContain(thought._id);
+
+    // Hide, then confirm it is filtered out of the visible set.
+    const hidden = await admin.patch(`/api/v1/posts/${thought._id}`).send({ hidden: true });
+    expect(hidden.body.data.post.hidden).toBe(true);
+    const visible = await admin.get('/api/v1/admin/posts?hidden=false&limit=100');
+    expect(visible.body.data.posts.map((p) => p._id)).not.toContain(thought._id);
+
+    // Delete removes it outright.
+    expect((await admin.delete(`/api/v1/posts/${thought._id}`)).status).toBe(204);
+    const { Post } = await import('../models/Post.js');
+    expect(await Post.countDocuments({ _id: thought._id })).toBe(0);
+  });
+
+  it('exposes the account behind a reported thought so an admin can act on it', async () => {
+    const { agent: author } = await login('newbie', 'newpassword1');
+    const post = (await author.post('/api/v1/posts').send({ body: 'owns this thought' })).body.data.post;
+    const { agent: reporter } = await login('plainuser', 'plainpass1');
+    const report = (await reporter.post('/api/v1/reports').send({ kind: 'post', targetId: post._id, reason: 'spam' })).body.data.report;
+
+    const { agent: admin } = await login('admin', 'adminpass1');
+    const queue = await admin.get('/api/v1/admin/reports?status=open&limit=100');
+    const row = queue.body.data.reports.find((r) => r._id === report._id);
+    expect(row.targetAuthor).toMatchObject({ username: 'newbie' });
+
+    await admin.delete(`/api/v1/posts/${post._id}`);
+    await admin.patch(`/api/v1/admin/reports/${report._id}`).send({ action: 'dismiss' });
+  });
 });

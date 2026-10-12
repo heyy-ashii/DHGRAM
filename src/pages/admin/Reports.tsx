@@ -1,18 +1,18 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, Flag, Trash2, XCircle } from 'lucide-react'
+import { CheckCircle2, Trash2, XCircle } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { EmptyState, PageSpinner, Spinner } from '../../components/ui'
-import { reasonLabel } from '../../components/ReportModal'
+import { ModerationActions } from '../../components/ModerationActions'
 import { useUi } from '../../context/UiContext'
 import { api, errorMessage } from '../../lib/api'
 import { useReports } from '../../lib/queries'
+import { REPORT_KINDS, reportReasonLabel } from '../../lib/reports'
 import type { Report } from '../../lib/types'
 import { usePageMeta } from '../../lib/usePageMeta'
 import { cn, formatShort } from '../../lib/utils'
 
 const STATUSES = ['open', 'resolved', 'dismissed', 'all'] as const
-const KINDS = ['post', 'story', 'user'] as const
+const KINDS = REPORT_KINDS
 
 const kindStyles: Record<Report['kind'], string> = {
   post: 'bg-brand/10 text-brand',
@@ -70,7 +70,7 @@ export default function Reports() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold capitalize', kindStyles[r.kind])}>{r.kind}</span>
-                    <span className="text-sm font-semibold">{reasonLabel(r.reason)}</span>
+                    <span className="text-sm font-semibold">{reportReasonLabel(r.reason)}</span>
                     <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium capitalize',
                       r.status === 'open' ? 'bg-amber-500/10 text-amber-600' : r.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-ink-500/10 text-ink-500')}>
                       {r.status}
@@ -82,6 +82,14 @@ export default function Reports() {
                     Reported by {r.reporterName || 'a student'} · {formatShort(r.createdAt)}
                     {r.handledAt && <> · handled {formatShort(r.handledAt)}</>}
                   </p>
+                  {r.targetAuthor && (
+                    <div className="mt-2 flex items-center gap-3">
+                      <span className="text-xs text-ink-500">
+                        Author: <span className="font-medium text-ink-700 dark:text-ink-200">{r.targetAuthor.name || `@${r.targetAuthor.username}`}</span>
+                      </span>
+                      <ModerationActions userId={r.targetAuthor._id} username={r.targetAuthor.username} />
+                    </div>
+                  )}
                 </div>
 
                 {r.status === 'open' && (
@@ -94,11 +102,6 @@ export default function Reports() {
                       >
                         {resolve.isPending ? <Spinner className="size-4" /> : <Trash2 className="size-4" />} Remove content
                       </button>
-                    )}
-                    {r.kind === 'user' && (
-                      <Link className="btn-outline px-3 py-1.5 text-sm" to={`/admin/users?q=${encodeURIComponent(r.targetLabel.split(' ')[0].replace('@', ''))}`}>
-                        <Flag className="size-4" /> Manage account
-                      </Link>
                     )}
                     <button className="btn-outline px-3 py-1.5 text-sm" disabled={resolve.isPending} onClick={() => resolve.mutate({ id: r._id, action: 'resolve' })}>
                       <CheckCircle2 className="size-4" /> Resolve

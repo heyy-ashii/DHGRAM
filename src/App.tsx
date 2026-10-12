@@ -17,6 +17,7 @@ const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
 const AdminUsers = lazy(() => import('./pages/admin/Users'))
 const AdminReports = lazy(() => import('./pages/admin/Reports'))
+const AdminThoughts = lazy(() => import('./pages/admin/Thoughts'))
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
         >
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
+          <Route path="thoughts" element={<AdminThoughts />} />
           <Route path="reports" element={<AdminReports />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>

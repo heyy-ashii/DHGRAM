@@ -6,19 +6,9 @@ import { Modal, Spinner } from './ui'
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
 import { api, errorMessage } from '../lib/api'
+import { REPORT_REASONS } from '../lib/reports'
 import type { ReportKind } from '../lib/types'
 import { cn } from '../lib/utils'
-
-const REASONS = [
-  { value: 'spam', label: 'Spam or misleading' },
-  { value: 'harassment', label: 'Harassment or bullying' },
-  { value: 'hate', label: 'Hate speech' },
-  { value: 'nudity', label: 'Nudity or sexual content' },
-  { value: 'misinformation', label: 'False information' },
-  { value: 'other', label: 'Something else' },
-] as const
-
-export const reasonLabel = (value: string) => REASONS.find((r) => r.value === value)?.label ?? value
 
 // A single flag button that opens the report dialog. It renders nothing for a
 // guest (reporting needs an account) and for a signed-in user's own content.
@@ -107,7 +97,7 @@ export function ReportModal({
           <div>
             <p className="label">Why are you reporting this {kind}?</p>
             <div className="space-y-1.5">
-              {REASONS.map((r) => (
+              {REPORT_REASONS.map((r) => (
                 <label
                   key={r.value}
                   className={cn(
