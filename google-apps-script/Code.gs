@@ -22,7 +22,7 @@
 
 // Column order per tab. The Node layer maps these names to the shape it expects.
 var COLLECTIONS = {
-  Users: ['id', 'name', 'username', 'email', 'password', 'role', 'status', 'emailVerified', 'passwordChangedAt', 'lastLoginAt', 'failedLoginAttempts', 'lockUntil', 'createdAt', 'updatedAt'],
+  Users: ['id', 'name', 'username', 'email', 'password', 'role', 'status', 'suspendedUntil', 'emailVerified', 'passwordChangedAt', 'lastLoginAt', 'failedLoginAttempts', 'lockUntil', 'createdAt', 'updatedAt'],
   Otps: ['id', 'email', 'purpose', 'codeHash', 'attempts', 'expiresAt', 'createdAt', 'updatedAt'],
   Conversations: ['id', 'user', 'status', 'lastMessage', 'lastMessageAt', 'unreadForAdmin', 'unreadForUser', 'createdAt', 'updatedAt'],
   Messages: ['id', 'conversation', 'sender', 'senderRole', 'body', 'createdAt', 'updatedAt'],
@@ -30,6 +30,9 @@ var COLLECTIONS = {
   Groups: ['id', 'name', 'createdBy', 'members', 'lastMessage', 'lastMessageAt', 'createdAt', 'updatedAt'],
   GroupMembers: ['id', 'group', 'user', 'createdAt', 'updatedAt'],
   GroupMessages: ['id', 'group', 'sender', 'body', 'createdAt', 'updatedAt'],
+  Stories: ['id', 'author', 'imageUrl', 'caption', 'createdAt', 'updatedAt'],
+  StoryViews: ['id', 'story', 'viewer', 'createdAt', 'updatedAt'],
+  Reports: ['id', 'reporter', 'reporterName', 'kind', 'targetId', 'targetLabel', 'reason', 'details', 'status', 'handledBy', 'handledAt', 'createdAt', 'updatedAt'],
 };
 
 // Values that must stay JSON, not strings.

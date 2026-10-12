@@ -2,6 +2,7 @@ import { Heart, MessageCircle, MoreHorizontal, Pencil, Send, Share2, Trash2 } fr
 import { useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import Avatar from './Avatar'
+import { ReportButton } from './ReportModal'
 import { Spinner } from './ui'
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
@@ -235,6 +236,8 @@ export function PostCard({ post, onChange, index = 0 }: { post: Post; onChange: 
         <button className="btn-ghost px-3 py-1.5 text-ink-400" onClick={share} aria-label="Share">
           <Share2 className="size-5" />
         </button>
+
+        {!post.mine && <ReportButton kind="post" targetId={post._id} preview={post.body.slice(0, 140)} />}
 
         {!post.mine && (
           <Link

@@ -11,6 +11,7 @@ import chatRoutes from './routes/chat.js';
 import groupRoutes from './routes/groups.js';
 import messageRoutes from './routes/messages.js';
 import postRoutes from './routes/posts.js';
+import reportRoutes from './routes/reports.js';
 import storyRoutes from './routes/stories.js';
 import { asyncHandler } from './utils/AppError.js';
 
@@ -66,6 +67,7 @@ export function createApp({ connect = connectDB } = {}) {
 
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1/posts', postRoutes);
+  app.use('/api/v1/reports', reportRoutes);
   app.use('/api/v1/stories', storyRoutes);
   app.use('/api/v1/messages', messageRoutes);
   app.use('/api/v1/groups', groupRoutes);

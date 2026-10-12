@@ -1,4 +1,4 @@
-import { ExternalLink, LayoutDashboard, LogOut, MessageCircle, Moon, Sun, Users } from 'lucide-react'
+import { ExternalLink, Flag, LayoutDashboard, LogOut, MessageCircle, Moon, Sun, Users } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import Logo from '../../components/Logo'
 import { Toaster } from '../../components/ui'
@@ -16,6 +16,7 @@ export default function AdminLayout() {
   const items = [
     { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
     { to: '/admin/users', label: 'Users', icon: Users },
+    { to: '/admin/reports', label: 'Reports', icon: Flag, badge: stats?.openReports },
     { to: '/messages', label: 'Messages', icon: MessageCircle, badge: stats?.unreadMessages },
   ]
 

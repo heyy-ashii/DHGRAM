@@ -49,7 +49,7 @@ function PasswordInput({
 const titles = { login: 'Welcome back', signup: 'Create your account', forgot: 'Reset password' }
 const subtitles = {
   login: 'Log in with your username or email.',
-  signup: 'Just your registration number from the student list - no name needed.',
+  signup: 'Use your registration number from the student list and choose a password.',
   forgot: '',
 }
 
@@ -114,7 +114,7 @@ export default function AuthPanel({
     if (mode === 'login') return run(async () => done(await auth.login(form.identifier, form.password), 'Welcome back!'))
     if (mode === 'signup')
       return run(async () =>
-        done(await auth.signup({ regNo: form.regNo }), 'Account created. Welcome to DHGRAM!'),
+        done(await auth.signup({ regNo: form.regNo, password: form.password }), 'Account created. Welcome to DHGRAM!'),
       )
     if (step === 'email') return sendCode()
     return run(async () =>
@@ -204,16 +204,21 @@ export default function AuthPanel({
                 The registration number on the student list. No name needed — we find you by this.
               </p>
             </div>
+            <div>
+              <label className="label" htmlFor="signup-password">Password</label>
+              <PasswordInput
+                id="signup-password"
+                value={form.password}
+                onChange={set('password')}
+                autoComplete="new-password"
+              />
+              <p className="mt-1.5 text-xs text-ink-500">At least 8 characters.</p>
+            </div>
             <div className="rounded-2xl bg-brand-soft px-4 py-3 text-xs leading-relaxed text-brand-dark dark:bg-brand/10 dark:text-blue-200">
-              <p className="font-semibold text-ink-800 dark:text-ink-100">Your first password</p>
+              <p className="font-semibold text-ink-800 dark:text-ink-100">Your first login</p>
               <p className="mt-1">
-                Your <span className="font-semibold">registration number</span> followed by your{' '}
-                <span className="font-semibold">admission number</span>, with no space. For example, registration{' '}
-                <code className="rounded bg-white/70 px-1 py-0.5 font-semibold dark:bg-black/20">250001</code> and
-                admission <code className="rounded bg-white/70 px-1 py-0.5 font-semibold dark:bg-black/20">3411</code>{' '}
-                gives{' '}
-                <code className="rounded bg-white/70 px-1 py-0.5 font-semibold dark:bg-black/20">2500013411</code>. You
-                can change it after logging in.
+                Sign in with the username we build from your roster name and the password you choose here. Your
+                registration number stays tied to your account on the student list.
               </p>
             </div>
           </>

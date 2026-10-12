@@ -11,6 +11,7 @@ import { User } from '../models/User.js';
 import { findStudentByRegNo, initialPassword, usernameFromName } from '../roster.js';
 import { AppError, asyncHandler } from '../utils/AppError.js';
 import { sendOtpEmail } from '../utils/email.js';
+import { isSuspended, liftIfExpired } from '../utils/suspension.js';
 import { clearAuth, sendAuth } from '../utils/tokens.js';
 
 const router = Router();
@@ -62,17 +63,19 @@ async function consumeOtp(emailAddress, purpose, code) {
 
 const otpCode = z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code');
 const regNo = z.string().trim().min(1, 'Enter your registration number').max(16);
+const signupPassword = z.string().min(8, 'Password must be at least 8 characters').max(128);
 
 // The student list is the allow-list for account creation: a person may sign up
 // with just the registration number that appears on the list. Students do not
 // reliably know their exact name spelling (case, spacing) as it is written on the
 // sheet, so the name is NOT asked for or checked - the registration number alone
-// identifies the row. The username is derived from the roster name and the initial
-// password is the registration number followed by the admission number.
+// identifies the row. The username is derived from the roster name. The student
+// chooses their own password at signup; when omitted it falls back to the roster
+// default (registration number followed by the admission number).
 router.post(
   '/signup',
   loginLimiter,
-  validate(z.object({ regNo })),
+  validate(z.object({ regNo, password: signupPassword.optional() })),
   asyncHandler(async (req, res) => {
     const student = await findStudentByRegNo(req.body.regNo);
     if (!student) {
@@ -95,7 +98,7 @@ router.post(
     const user = await User.create({
       name: student.name,
       username,
-      password: initialPassword(student),
+      password: req.body.password ?? initialPassword(student),
       role: 'user',
       emailVerified: true,
       lastLoginAt: new Date(),
@@ -130,7 +133,19 @@ router.post(
       }
       throw new AppError('Incorrect username or password', 401);
     }
-    if (user.status !== 'active') throw new AppError('This account has been disabled. Contact the admin.', 403);
+    if (user.status !== 'active') {
+      // Lift a suspension that has run out, then admit them; a permanent disable
+      // or a still-running suspension stays shut.
+      await liftIfExpired(user);
+      if (user.status !== 'active') {
+        throw new AppError(
+          isSuspended(user)
+            ? `This account is suspended until ${new Date(user.suspendedUntil).toLocaleString()}. Contact the admin.`
+            : 'This account has been disabled. Contact the admin.',
+          403,
+        );
+      }
+    }
     user.failedLoginAttempts = 0;
     user.lockUntil = undefined;
     user.lastLoginAt = new Date();

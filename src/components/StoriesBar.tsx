@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Plus, Trash2, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Flag, Plus, Trash2, X } from 'lucide-react'
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
 import Avatar from './Avatar'
+import { ReportModal } from './ReportModal'
 import { Spinner } from './ui'
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
@@ -106,6 +107,7 @@ function StoryViewer({ items, startIndex, onClose }: { items: Item[]; startIndex
   const { toast } = useUi()
   const { isAdmin } = useAuth()
   const [index, setIndex] = useState(startIndex)
+  const [reporting, setReporting] = useState(false)
   const viewed = useRef(new Set<string>())
   const current = items[index]
 
@@ -145,6 +147,7 @@ function StoryViewer({ items, startIndex, onClose }: { items: Item[]; startIndex
 
   if (!current) return null
   const canDelete = current.story.mine || isAdmin
+  const canReport = !current.story.mine
 
   return (
     <div className="fixed inset-0 z-[70] flex flex-col bg-black/95" role="dialog" aria-modal="true" aria-label="Story">
@@ -161,6 +164,15 @@ function StoryViewer({ items, startIndex, onClose }: { items: Item[]; startIndex
             aria-label="Delete story"
           >
             {remove.isPending ? <Spinner className="size-5" /> : <Trash2 className="size-5" />}
+          </button>
+        )}
+        {canReport && (
+          <button
+            className="rounded-full p-2 text-white/80 hover:bg-white/10"
+            onClick={() => setReporting(true)}
+            aria-label="Report story"
+          >
+            <Flag className="size-5" />
           </button>
         )}
         <button className="rounded-full p-2 text-white/80 hover:bg-white/10" onClick={onClose} aria-label="Close">
@@ -194,6 +206,14 @@ function StoryViewer({ items, startIndex, onClose }: { items: Item[]; startIndex
           <ChevronRight className="size-6" />
         </button>
       </div>
+
+      <ReportModal
+        open={reporting}
+        onClose={() => setReporting(false)}
+        kind="story"
+        targetId={current.story._id}
+        preview={current.story.caption || 'Story'}
+      />
     </div>
   )
 }

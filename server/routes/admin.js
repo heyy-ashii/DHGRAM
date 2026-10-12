@@ -6,9 +6,11 @@ import { Conversation, Message } from '../models/Chat.js';
 import { Group, GroupMessage } from '../models/GroupChat.js';
 import { PeerConversation, PeerMessage } from '../models/PeerChat.js';
 import { Post } from '../models/Post.js';
+import { Report, REPORT_KINDS } from '../models/Report.js';
 import { Story, StoryView } from '../models/Story.js';
 import { User } from '../models/User.js';
 import { AppError, asyncHandler } from '../utils/AppError.js';
+import { isSuspended } from '../utils/suspension.js';
 
 // Admin-only management API, mounted at /api/v1/admin. The support inbox itself
 // lives on the chat routes (/chat/conversations*, guarded by restrictTo('admin'));
@@ -18,35 +20,45 @@ router.use(protect, restrictTo('admin'));
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const publicUser = (u) =>
-  u && typeof u.toPublicJSON === 'function'
-    ? u.toPublicJSON()
-    : {
-        _id: u._id,
-        name: u.name,
-        username: u.username,
-        email: u.email ?? null,
-        role: u.role,
-        status: u.status,
-        avatar: u.avatar ?? null,
-        emailVerified: Boolean(u.emailVerified),
-        lastLoginAt: u.lastLoginAt ?? null,
-        createdAt: u.createdAt,
-      };
+const publicUser = (u) => {
+  const base =
+    u && typeof u.toPublicJSON === 'function'
+      ? u.toPublicJSON()
+      : {
+          _id: u._id,
+          name: u.name,
+          username: u.username,
+          email: u.email ?? null,
+          role: u.role,
+          status: u.status,
+          suspendedUntil: u.suspendedUntil ?? null,
+          avatar: u.avatar ?? null,
+          emailVerified: Boolean(u.emailVerified),
+          lastLoginAt: u.lastLoginAt ?? null,
+          createdAt: u.createdAt,
+        };
+  // A clear, UI-friendly state on top of the raw status.
+  return {
+    ...base,
+    suspension: isSuspended(u) ? 'suspended' : u.status === 'disabled' ? 'dismissed' : 'active',
+  };
+};
 
 router.get(
   '/stats',
   asyncHandler(async (_req, res) => {
-    const [users, admins, disabled, openChats, unread] = await Promise.all([
+    const [users, admins, disabled, suspended, openReports, openChats, unread] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ role: 'admin' }),
       User.countDocuments({ status: 'disabled' }),
+      User.countDocuments({ status: 'disabled', suspendedUntil: { $gt: new Date() } }),
+      Report.countDocuments({ status: 'open' }),
       Conversation.countDocuments({ status: 'open' }),
       Conversation.aggregate([{ $group: { _id: null, total: { $sum: '$unreadForAdmin' } } }]),
     ]);
     res.json({
       status: 'success',
-      data: { users, admins, disabled, openChats, unreadMessages: unread[0]?.total ?? 0 },
+      data: { users, admins, disabled, suspended, openReports, openChats, unreadMessages: unread[0]?.total ?? 0 },
     });
   }),
 );
@@ -123,6 +135,9 @@ router.patch(
       password: password.optional(),
       role: z.enum(['user', 'admin']).optional(),
       status: z.enum(['active', 'disabled']).optional(),
+      // The action shorthand is a convenience over status + suspendedUntil.
+      action: z.enum(['suspend', 'dismiss', 'reinstate']).optional(),
+      suspendUntil: z.coerce.date().optional(),
     }),
   ),
   asyncHandler(async (req, res) => {
@@ -130,11 +145,34 @@ router.patch(
     if (!user) throw new AppError('User not found', 404);
 
     const isSelf = String(user._id) === String(req.user._id);
-    if (isSelf && (req.body.role === 'user' || req.body.status === 'disabled')) {
+    const { action, suspendUntil, email: newEmail, password: newPassword, ...rest } = req.body;
+    const wantsDisabled = action === 'suspend' || action === 'dismiss' || rest.status === 'disabled';
+    if (isSelf && (rest.role === 'user' || wantsDisabled)) {
       throw new AppError('You cannot demote or disable your own account', 400);
     }
 
-    const { email: newEmail, password: newPassword, ...rest } = req.body;
+    // A suspension is status='disabled' plus a future suspendedUntil that the auth
+    // layer lifts on its own; a dismissal is the same with no end time. Reinstating
+    // clears both. A bare `status` update stays supported for older callers.
+    if (action === 'suspend') {
+      if (!suspendUntil || suspendUntil.getTime() <= Date.now()) {
+        throw new AppError('Choose a suspension end time in the future', 400);
+      }
+      user.status = 'disabled';
+      user.suspendedUntil = suspendUntil;
+    } else if (action === 'dismiss') {
+      user.status = 'disabled';
+      user.suspendedUntil = null;
+    } else if (action === 'reinstate') {
+      user.status = 'active';
+      user.suspendedUntil = null;
+    } else if (rest.status !== undefined) {
+      // A bare status update (no action) still works and clears any suspension.
+      user.status = rest.status;
+      user.suspendedUntil = null;
+    }
+    delete rest.status;
+
     Object.assign(user, rest);
     if (newEmail !== undefined) {
       if (!newEmail) user.email = null;
@@ -187,6 +225,77 @@ router.delete(
 
     await user.deleteOne();
     res.status(204).end();
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// Reports queue
+// ---------------------------------------------------------------------------
+
+const reportQuery = z.object({
+  status: z.enum(['open', 'resolved', 'dismissed', 'all']).default('open'),
+  kind: z.enum(REPORT_KINDS).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+router.get(
+  '/reports',
+  validate(reportQuery, 'query'),
+  asyncHandler(async (req, res) => {
+    const { status, kind, page, limit } = req.validated.query;
+    const filter = {};
+    if (status !== 'all') filter.status = status;
+    if (kind) filter.kind = kind;
+    const [reports, total] = await Promise.all([
+      Report.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      Report.countDocuments(filter),
+    ]);
+    res.json({
+      status: 'success',
+      total,
+      page,
+      pages: Math.max(1, Math.ceil(total / limit)),
+      data: { reports },
+    });
+  }),
+);
+
+// Resolve a report: optionally remove the content it points at. A reported user
+// is dealt with through the suspend/dismiss flow on the users endpoint instead.
+router.patch(
+  '/reports/:id',
+  validate(z.object({ id: objectId }), 'params'),
+  validate(
+    z.object({
+      action: z.enum(['resolve', 'dismiss']),
+      removeContent: z.boolean().optional().default(false),
+    }),
+  ),
+  asyncHandler(async (req, res) => {
+    const report = await Report.findById(req.params.id);
+    if (!report) throw new AppError('Report not found', 404);
+    if (report.status !== 'open') throw new AppError('That report has already been handled', 400);
+
+    if (req.body.removeContent && report.kind === 'post') {
+      await Post.deleteMany({ _id: report.targetId });
+    } else if (req.body.removeContent && report.kind === 'story') {
+      await StoryView.deleteMany({ story: report.targetId });
+      await Story.deleteMany({ _id: report.targetId });
+    }
+
+    report.status = req.body.action === 'dismiss' ? 'dismissed' : 'resolved';
+    report.handledBy = req.user._id;
+    report.handledAt = new Date();
+    await report.save();
+    res.json({
+      status: 'success',
+      data: { report: typeof report.toObject === 'function' ? report.toObject() : report },
+    });
   }),
 );
 

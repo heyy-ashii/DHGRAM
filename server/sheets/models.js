@@ -4,7 +4,7 @@ const dateFields = (extra = []) => ['createdAt', 'updatedAt', ...extra];
 
 const userSpec = {
   name: 'Users',
-  dates: dateFields(['passwordChangedAt', 'lastLoginAt', 'lockUntil']),
+  dates: dateFields(['passwordChangedAt', 'lastLoginAt', 'lockUntil', 'suspendedUntil']),
   numbers: ['failedLoginAttempts'],
   booleans: ['emailVerified'],
   defaults: { role: 'user', status: 'active', failedLoginAttempts: 0, emailVerified: false },
@@ -16,6 +16,7 @@ const userSpec = {
     email: u.email ?? null,
     role: u.role,
     status: u.status,
+    suspendedUntil: u.suspendedUntil ?? null,
     avatar: u.avatar ?? null,
     emailVerified: Boolean(u.emailVerified),
     lastLoginAt: u.lastLoginAt ?? null,
@@ -100,6 +101,12 @@ const storyViewSpec = {
   publicJSON: (v) => ({ ...v }),
 };
 
+const reportSpec = {
+  name: 'Reports',
+  dates: dateFields(['handledAt']),
+  publicJSON: (r) => ({ ...r }),
+};
+
 export const SheetsUser = createCollection(userSpec);
 export const SheetsOtp = createCollection(otpSpec);
 export const SheetsConversation = createCollection(conversationSpec);
@@ -112,6 +119,7 @@ export const SheetsGroupMember = createCollection(groupMemberSpec);
 export const SheetsGroupMessage = createCollection(groupMessageSpec);
 export const SheetsStory = createCollection(storySpec);
 export const SheetsStoryView = createCollection(storyViewSpec);
+export const SheetsReport = createCollection(reportSpec);
 
 conversationSpec.populates = { user: SheetsUser };
 postSpec.populates = { author: SheetsUser };

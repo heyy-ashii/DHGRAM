@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
-import type { GroupSummary, MessageThread, PeerMessage, PostList, Stats, Story, StoryGroup, User, UserDirectory } from './types'
+import type { GroupSummary, MessageThread, PeerMessage, PostList, ReportList, Stats, Story, StoryGroup, User, UserDirectory } from './types'
 
 export const useStats = () =>
   useQuery({
@@ -75,4 +75,12 @@ export const useGroup = (id?: string) =>
     queryFn: () => api<{ data: { group: GroupSummary; messages: PeerMessage[] } }>(`/groups/${id}`).then((r) => r.data),
     enabled: Boolean(id),
     refetchInterval: 5000,
+  })
+
+export const useReports = ({ status = 'open', kind, page = 1, limit = 20 }: { status?: string; kind?: string; page?: number; limit?: number } = {}) =>
+  useQuery({
+    queryKey: ['admin', 'reports', { status, kind, page, limit }],
+    queryFn: () => api<ReportList>('/admin/reports', { query: { status, kind, page, limit } }),
+    placeholderData: (prev) => prev,
+    refetchInterval: 30000,
   })

@@ -67,10 +67,12 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
 
 export function EmptyState({
   title,
+  description,
   icon: Icon = Sparkles,
   children,
 }: {
   title: string
+  description?: string
   icon?: LucideIcon
   children?: ReactNode
 }) {
@@ -80,7 +82,7 @@ export function EmptyState({
         <Icon className="size-7" />
       </span>
       <p className="mt-4 text-lg font-bold">{title}</p>
-      {children && <div className="mt-2 text-sm text-ink-500">{children}</div>}
+      {(description || children) && <div className="mt-2 text-sm text-ink-500">{description}{children}</div>}
     </div>
   )
 }

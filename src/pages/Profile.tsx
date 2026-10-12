@@ -6,6 +6,7 @@ import AboutPanel from '../components/AboutPanel'
 import Avatar from '../components/Avatar'
 import BrandName from '../components/BrandName'
 import { PostCard } from '../components/PostCard'
+import { ReportButton } from '../components/ReportModal'
 import { EmptyState, ErrorState, Modal, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
@@ -165,9 +166,12 @@ export default function Profile() {
                 </div>
               </div>
             ) : (
-              <button className="btn-primary shrink-0" onClick={() => startChat.mutate(viewUser._id)} disabled={startChat.isPending}>
-                {startChat.isPending ? <Spinner className="size-4" /> : <MessageCircle className="size-4" />} Message
-              </button>
+              <div className="flex shrink-0 items-center gap-1">
+                <button className="btn-primary shrink-0" onClick={() => startChat.mutate(viewUser._id)} disabled={startChat.isPending}>
+                  {startChat.isPending ? <Spinner className="size-4" /> : <MessageCircle className="size-4" />} Message
+                </button>
+                <ReportButton kind="user" targetId={viewUser._id} label="" className="shrink-0" />
+              </div>
             )}
           </div>
 

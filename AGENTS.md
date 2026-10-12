@@ -115,6 +115,34 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
 - The daily cleanup cron (`vercel.json` → `/api/v1/chat/cron/cleanup`) trims both
   peer and support messages.
 
+## Reports & suspensions
+
+- A **suspension** is a user with `status: 'disabled'` plus a future
+  `suspendedUntil`; `server/utils/suspension.js` (`isSuspended`, `liftIfExpired`)
+  defines it, and `resolveUser` in `server/middleware/auth.js` lifts an expired one
+  on the next request so the account works again without an admin action. A
+  permanent disable (a "dismiss") is `disabled` with no `suspendedUntil`.
+- Admins drive it through `PATCH /admin/users/:id` with an `action` of `suspend`
+  (requires a future `suspendUntil`), `dismiss` or `reinstate`; the response user
+  carries a derived `suspension` of `active | suspended | dismissed`. A bare
+  `status` update is still accepted and clears any suspension.
+- Reporting: `server/models/Report.js` + `server/routes/reports.js`
+  (`POST /reports`, any signed-in user) flags a `post`, `story` or `user`. The
+  reported row is resolved up front for a readable `targetLabel` and to reject
+  missing/deleted targets; a duplicate open report by the same reporter is a 409.
+- The admin queue is `GET /admin/reports` (filter by `status`/`kind`, paginated)
+  and `PATCH /admin/reports/:id` (`action: resolve | dismiss`, optional
+  `removeContent` deletes a reported post/story). `/admin/stats` adds
+  `openReports` and `suspended` counters.
+- UI: `ReportButton`/`ReportModal` (`src/components/ReportModal.tsx`) sit on posts,
+  stories and profiles; the admin `Reports` page and the Users table's moderate
+  modal (1h/24h/7d/30d picker) are in `src/pages/admin/`.
+- Storage parity: `supabase/migrations/0006_reports.sql` adds `app_reports` and
+  `app_users.suspended_until`; `server/supabase/models.js` and
+  `server/sheets/models.js` add the report spec, and `google-apps-script/Code.gs`
+  adds the `Reports` tab and the `suspendedUntil` user column. Run
+  `npm run supabase:apply` after pulling.
+
 ## Stories & profiles
 
 - `server/routes/stories.js` + `server/models/Story.js` (and `StoryView`). A story
@@ -136,10 +164,11 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
   `server/routes/auth.js` signup). The name is deliberately **not** asked for:
   students don't reliably know its exact case/spacing as written on the sheet.
   The roster name still seeds the profile and the derived username, and duplicate
-  names get a numeric suffix (`name.2`) instead of a hard 409. The initial password
-  is registration number + admission number (e.g. `2500013411`); users are told to
-  change it after first login. Password reset still uses email OTP
-  (`requestResetCode` / `resetPassword`).
+  names get a numeric suffix (`name.2`) instead of a hard 409. The student now
+  **chooses their own password** on the signup form (minimum 8 characters); if the
+  field is omitted the server falls back to the roster default of registration
+  number + admission number (e.g. `2500013411`). Password reset still uses email
+  OTP (`requestResetCode` / `resetPassword`).
 
 ## UI & design system
 

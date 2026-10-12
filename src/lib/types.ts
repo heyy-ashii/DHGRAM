@@ -1,5 +1,7 @@
 export type Role = 'user' | 'admin'
 
+export type Suspension = 'active' | 'suspended' | 'dismissed'
+
 export interface User {
   _id: string
   name: string
@@ -7,10 +9,36 @@ export interface User {
   email: string | null
   role: Role
   status: 'active' | 'disabled'
+  suspendedUntil?: string | null
+  suspension?: Suspension
   avatar?: string | null
   emailVerified: boolean
   lastLoginAt: string | null
   createdAt: string
+}
+
+export type ReportKind = 'post' | 'story' | 'user'
+
+export interface Report {
+  _id: string
+  reporter: string
+  reporterName: string
+  kind: ReportKind
+  targetId: string
+  targetLabel: string
+  reason: string
+  details: string
+  status: 'open' | 'resolved' | 'dismissed'
+  handledBy?: string | null
+  handledAt?: string | null
+  createdAt: string
+}
+
+export interface ReportList {
+  total: number
+  page: number
+  pages: number
+  data: { reports: Report[] }
 }
 
 export interface Post {
@@ -107,6 +135,8 @@ export interface Stats {
   users: number
   admins: number
   disabled: number
+  suspended: number
+  openReports: number
   openChats: number
   unreadMessages: number
 }
