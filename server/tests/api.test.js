@@ -431,6 +431,25 @@ describe('stories', () => {
     expect((await request(app).post('/api/v1/stories').send({ imageUrl: 'data:image/png;base64,AAAA' })).status).toBe(401);
   });
 
+  it('accepts a realistic compressed story image and still caps oversized ones', async () => {
+    const { User } = await import('../models/User.js');
+    await User.create({ name: 'Story Size', username: 'storysize', password: 'storysize1' });
+    const { agent } = await login('storysize', 'storysize1');
+
+    // A 1080px JPEG data URL is routinely several hundred KB; the old 100kb body
+    // limit rejected it with 413 before the route validator ever ran.
+    const imageUrl = `data:image/jpeg;base64,${'A'.repeat(400_000)}`;
+    const ok = await agent.post('/api/v1/stories').send({ imageUrl, caption: 'big one' });
+    expect(ok.status).toBe(201);
+    expect(ok.body.data.story.caption).toBe('big one');
+
+    // Above the 1.5 MB validator cap the request is rejected by the route, not
+    // by the body limit (which must sit higher so this path is reachable).
+    const tooBig = await agent.post('/api/v1/stories').send({ imageUrl: `data:image/jpeg;base64,${'A'.repeat(1_600_000)}` });
+    expect(tooBig.status).toBe(400);
+    expect(tooBig.body.message).toContain('That image is too large');
+  });
+
   it('groups stories by author, tracks views and limits deletion to the owner', async () => {
     const { User } = await import('../models/User.js');
     await User.create({ name: 'Story One', username: 'storyone', password: 'storyone1' });

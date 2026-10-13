@@ -38,7 +38,10 @@ export function createApp({ connect = connectDB } = {}) {
     next();
   });
 
-  app.use(express.json({ limit: '100kb' }));
+  // Images (avatars, stories) are sent as inline data URLs and capped at ~1.5 MB
+  // by the route validators, so the JSON body limit must sit above that or every
+  // story/avatar upload fails with "Request body too large" (413).
+  app.use(express.json({ limit: '2mb' }));
   app.use(cookieParser());
 
   app.get('/api/v1/health', (_req, res) =>
