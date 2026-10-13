@@ -1,5 +1,6 @@
 import { AlertCircle, CheckCircle2, Loader2, Sparkles, X, type LucideIcon } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { useUi } from '../context/UiContext'
 import { cn } from '../lib/utils'
 
@@ -121,7 +122,9 @@ export function Modal({
     }
   }, [open, onClose])
   if (!open) return null
-  return (
+  // Rendered in a portal so a transformed or overflow-hidden ancestor (e.g. the
+  // animated feed card that hosts the report button) cannot clip the dialog.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-ink-950/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
       onMouseDown={onClose}
@@ -131,20 +134,21 @@ export function Modal({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          'card animate-rise max-h-[92vh] w-full overflow-y-auto rounded-b-none p-6 shadow-lift sm:rounded-3xl',
+          'card animate-rise flex max-h-[92vh] w-full flex-col overflow-hidden rounded-b-none shadow-lift sm:rounded-3xl',
           wide ? 'sm:max-w-2xl' : 'sm:max-w-md',
         )}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between">
+        <div className="flex shrink-0 items-center justify-between border-b border-ink-200/70 p-6 pb-4 dark:border-ink-800">
           <h2 className="text-xl font-bold">{title}</h2>
           <button className="btn-ghost p-2" onClick={onClose} aria-label="Close">
             <X className="size-5" />
           </button>
         </div>
-        {children}
+        <div className="min-h-0 flex-1 overflow-y-auto p-6 pt-4">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

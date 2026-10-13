@@ -67,8 +67,8 @@ export default function Reports() {
           {data?.data.reports.map((r) => (
             <article key={r._id} className="card p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className={cn('rounded-full px-2 py-0.5 text-xs font-semibold capitalize', kindStyles[r.kind])}>{r.kind}</span>
                     <span className="text-sm font-semibold">{reportReasonLabel(r.reason)}</span>
                     <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium capitalize',
@@ -93,20 +93,20 @@ export default function Reports() {
                 </div>
 
                 {r.status === 'open' && (
-                  <div className="flex shrink-0 flex-wrap gap-2">
+                  <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
                     {r.kind !== 'user' && (
                       <button
-                        className="btn-danger px-3 py-1.5 text-sm"
+                        className="btn-danger flex-1 px-3 py-1.5 text-sm sm:flex-none"
                         disabled={resolve.isPending}
                         onClick={() => resolve.mutate({ id: r._id, action: 'resolve', removeContent: true })}
                       >
                         {resolve.isPending ? <Spinner className="size-4" /> : <Trash2 className="size-4" />} Remove content
                       </button>
                     )}
-                    <button className="btn-outline px-3 py-1.5 text-sm" disabled={resolve.isPending} onClick={() => resolve.mutate({ id: r._id, action: 'resolve' })}>
+                    <button className="btn-outline flex-1 px-3 py-1.5 text-sm sm:flex-none" disabled={resolve.isPending} onClick={() => resolve.mutate({ id: r._id, action: 'resolve' })}>
                       <CheckCircle2 className="size-4" /> Resolve
                     </button>
-                    <button className="btn-ghost px-3 py-1.5 text-sm" disabled={resolve.isPending} onClick={() => resolve.mutate({ id: r._id, action: 'dismiss' })}>
+                    <button className="btn-ghost flex-1 px-3 py-1.5 text-sm sm:flex-none" disabled={resolve.isPending} onClick={() => resolve.mutate({ id: r._id, action: 'dismiss' })}>
                       <XCircle className="size-4" /> Dismiss
                     </button>
                   </div>
