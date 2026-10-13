@@ -126,7 +126,7 @@ export function Modal({
   // animated feed card that hosts the report button) cannot clip the dialog.
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-ink-950/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-ink-950/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
       onMouseDown={onClose}
     >
       <div
@@ -187,7 +187,7 @@ export function ConfirmModal({
 export function Toaster() {
   const { toasts } = useUi()
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-4 z-[60] flex flex-col items-center gap-2 px-4" aria-live="polite">
+    <div className="pointer-events-none fixed inset-x-0 top-4 z-[90] flex flex-col items-center gap-2 px-4" aria-live="polite">
       {toasts.map((t) => (
         <div
           key={t.id}
