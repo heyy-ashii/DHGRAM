@@ -217,8 +217,13 @@ export default function AuthPanel({
             <div className="rounded-2xl bg-brand-soft px-4 py-3 text-xs leading-relaxed text-brand-dark dark:bg-brand/10 dark:text-blue-200">
               <p className="font-semibold text-ink-800 dark:text-ink-100">Your first login</p>
               <p className="mt-1">
-                Sign in with the username we build from your roster name and the password you choose here. Your
-                registration number stays tied to your account on the student list.
+                Sign in with the username we build from your roster name and the password you choose above. If you
+                leave the password blank, your first password is your <span className="font-semibold">registration
+                number followed by your admission number</span> — for example registration 250001 with admission
+                3411 gives <span className="font-semibold">2500013411</span>.
+              </p>
+              <p className="mt-1">
+                Your registration number stays tied to your account on the student list.
               </p>
             </div>
           </>
