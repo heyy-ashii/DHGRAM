@@ -8,6 +8,10 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 80 },
     username: { type: String, required: true, unique: true, lowercase: true, trim: true, minlength: 3, maxlength: 30 },
+    // The roster registration number, kept so a student can sign in with either
+    // their username or this number. Sparse: hand-made accounts (e.g. the admin)
+    // have none. Not unique: the roster is the source of truth, not this cache.
+    regNo: { type: String, lowercase: true, trim: true, sparse: true },
     email: { type: String, unique: true, sparse: true, lowercase: true, trim: true },
     // Spreadsheet signup sets this to the registration number followed by the
     // admission number, so the 8-character minimum of the old email flow is not
@@ -50,6 +54,7 @@ userSchema.methods.toPublicJSON = function toPublicJSON() {
     _id: this._id,
     name: this.name,
     username: this.username,
+    regNo: this.regNo ?? null,
     email: this.email ?? null,
     role: this.role,
     status: this.status,

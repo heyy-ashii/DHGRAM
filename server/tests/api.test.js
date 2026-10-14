@@ -3,7 +3,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 process.env.NODE_ENV = 'test';
-process.env.ROSTER_CSV = 'AD.NO,REG. NO,NAME,PHONE,EMAIL\n3411,250001,New Student,,\n3412,250002,Second Student,,\n';
+process.env.ROSTER_CSV = 'AD.NO,REG. NO,NAME,PHONE,EMAIL\n3411,250001,New Student,,\n3412,250002,Second Student,,\n3413,250003,Legacy Student,,\n';
 // This suite runs on the in-memory MongoDB. Blank the other datastore settings
 // that .env may carry so tests never reach a hosted database. Empty strings are
 // used deliberately: dotenv does not override keys that already exist.
@@ -53,6 +53,35 @@ describe('auth', () => {
 
     const me = await agent.get('/api/v1/auth/me');
     expect(me.body.data.user.username).toBe('new.student');
+  });
+
+  it('lets a student log in with their registration number instead of username', async () => {
+    // 250002 belongs to "Second Student", provisioned lazily like any other.
+    const { res } = await login('250002', '2500023412');
+    expect(res.status).toBe(200);
+    expect(res.body.data.user.username).toBe('second.student');
+    expect(res.body.data.user.regNo).toBe('250002');
+
+    // The number keeps working after the account exists.
+    const again = await login('250002', '2500023412');
+    expect(again.res.status).toBe(200);
+    expect(again.res.body.data.user.username).toBe('second.student');
+
+    // An unknown number is just a failed login, not a new account.
+    expect((await login('999999', '2500013411')).res.status).toBe(401);
+  });
+
+  it('backfills the registration number on an older account at next username login', async () => {
+    // An account made before the number was stored (no regNo yet).
+    await User.create({ name: 'Legacy Student', username: 'legacy.student', password: 'legacypass1', emailVerified: true });
+    const { res } = await login('legacy.student', 'legacypass1');
+    expect(res.status).toBe(200);
+    expect(res.body.data.user.regNo).toBe('250003');
+
+    // Now the number works as a login for that same account.
+    const byReg = await login('250003', 'legacypass1');
+    expect(byReg.res.status).toBe(200);
+    expect(byReg.res.body.data.user.username).toBe('legacy.student');
   });
 
   it('does not sign up via the removed endpoint, and rejects a wrong default password', async () => {

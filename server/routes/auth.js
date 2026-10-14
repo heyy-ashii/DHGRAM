@@ -8,9 +8,9 @@ import { loginLimiter, otpLimiter } from '../middleware/rateLimit.js';
 import { email, name, password, username, validate } from '../middleware/validate.js';
 import { Otp } from '../models/Otp.js';
 import { User } from '../models/User.js';
-import { findStudentByUsername } from '../roster.js';
+import { findStudentByIdentifier, findStudentByUsername } from '../roster.js';
 import { AppError, asyncHandler } from '../utils/AppError.js';
-import { createStudentAccount } from '../utils/accounts.js';
+import { createStudentAccount, ensureRegNo } from '../utils/accounts.js';
 import { sendOtpEmail } from '../utils/email.js';
 import { isSuspended, liftIfExpired } from '../utils/suspension.js';
 import { clearAuth, sendAuth } from '../utils/tokens.js';
@@ -72,9 +72,13 @@ router.post(
       .trim()
       .toLowerCase();
     const pwd = String(req.body?.password ?? '');
-    if (!identifier || !pwd) throw new AppError('Please provide username/email and password', 400);
+    if (!identifier || !pwd) throw new AppError('Please provide your username/registration number and password', 400);
 
-    const query = identifier.includes('@') ? { email: identifier } : { username: identifier };
+    // Students sign in with their username or their registration number; the
+    // number is stored on the account so this needs no roster round-trip.
+    const query = identifier.includes('@')
+      ? { email: identifier }
+      : { $or: [{ username: identifier }, { regNo: identifier }] };
     let user = await User.findOne(query).select('+password +failedLoginAttempts +lockUntil');
     if (user?.lockUntil && user.lockUntil > new Date()) {
       throw new AppError('Account temporarily locked after too many failed attempts. Try again later.', 423);
@@ -83,8 +87,13 @@ router.post(
     // one. If a roster student has not logged in before, their account is
     // provisioned here, on first login, with the default password.
     if (!user && !identifier.includes('@')) {
-      const student = await findStudentByUsername(identifier);
+      const student = await findStudentByIdentifier(identifier);
       if (student) user = await createStudentAccount(student);
+    } else if (user && !user.regNo && !identifier.includes('@')) {
+      // An account made before the number was stored: fill it in so the number
+      // works as a login from now on.
+      const student = await findStudentByUsername(user.username);
+      if (student) await ensureRegNo(user, student);
     }
     if (!user || !(await user.checkPassword(pwd))) {
       if (user) {

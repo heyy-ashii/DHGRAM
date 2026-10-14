@@ -137,14 +137,14 @@ export default function AuthPanel({
         {mode === 'login' && (
           <>
             <div>
-              <label className="label" htmlFor="identifier">Username or email</label>
+              <label className="label" htmlFor="identifier">Username or registration number</label>
               <input
                 id="identifier"
                 className="input"
                 value={form.identifier}
                 onChange={(e) => set('identifier')(e.target.value)}
                 autoComplete="username"
-                placeholder="e.g. jiyad.cp"
+                placeholder="e.g. jiyad.cp or 250001"
                 required
               />
             </div>
@@ -160,10 +160,8 @@ export default function AuthPanel({
             <div className="flex items-start gap-2.5 rounded-[10px] bg-brand-soft px-4 py-3 text-xs leading-relaxed text-brand-dark dark:bg-brand/10 dark:text-blue-200">
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
               <p>
-                Your account already exists. Your username is built from your name on the student list (e.g.{' '}
-                <span className="font-semibold">jiyad.cp</span>). Logging in for the first time? Your password is your{' '}
-                <span className="font-semibold">registration number followed by your admission number</span> — for
-                example registration 250001 with admission 3411 gives <span className="font-semibold">2500013411</span>.
+                Your account already exists. Your username is built from your name on the student list. Logging in for
+                the first time? Your password is your registration number followed by your admission number.
               </p>
             </div>
           </>

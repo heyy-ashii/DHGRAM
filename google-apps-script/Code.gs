@@ -22,7 +22,7 @@
 
 // Column order per tab. The Node layer maps these names to the shape it expects.
 var COLLECTIONS = {
-  Users: ['id', 'name', 'username', 'email', 'password', 'role', 'status', 'suspendedUntil', 'emailVerified', 'passwordChangedAt', 'lastLoginAt', 'failedLoginAttempts', 'lockUntil', 'createdAt', 'updatedAt'],
+  Users: ['id', 'name', 'username', 'regNo', 'email', 'password', 'role', 'status', 'suspendedUntil', 'emailVerified', 'passwordChangedAt', 'lastLoginAt', 'failedLoginAttempts', 'lockUntil', 'createdAt', 'updatedAt'],
   Otps: ['id', 'email', 'purpose', 'codeHash', 'attempts', 'expiresAt', 'createdAt', 'updatedAt'],
   Conversations: ['id', 'user', 'status', 'lastMessage', 'lastMessageAt', 'unreadForAdmin', 'unreadForUser', 'createdAt', 'updatedAt'],
   Messages: ['id', 'conversation', 'sender', 'senderRole', 'body', 'createdAt', 'updatedAt'],
