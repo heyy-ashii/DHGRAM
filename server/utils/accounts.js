@@ -1,5 +1,5 @@
 import { User } from '../models/User.js';
-import { initialPassword, usernameFromName } from '../roster.js';
+import { initialPassword, normRegNo, usernameFromName } from '../roster.js';
 import { AppError } from './AppError.js';
 
 // Build an account for a student on the roster. Accounts are never created by
@@ -25,9 +25,21 @@ export async function createStudentAccount(student, password) {
   return User.create({
     name: student.name,
     username,
+    regNo: normRegNo(student.regNo),
     password: password ?? initialPassword(student),
     role: 'user',
     emailVerified: true,
     lastLoginAt: new Date(),
   });
+}
+
+// The registration number is a login identifier, so make sure an existing
+// account carries it. Accounts provisioned before the number was stored (or made
+// by hand) are filled in on the next roster login, without touching the password.
+export async function ensureRegNo(user, student) {
+  const regNo = normRegNo(student.regNo);
+  if (!regNo || user.regNo === regNo) return user;
+  user.regNo = regNo;
+  await user.save({ validateModifiedOnly: true });
+  return user;
 }

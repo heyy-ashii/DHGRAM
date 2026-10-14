@@ -13,6 +13,7 @@ const userSpec = {
     _id: u._id,
     name: u.name,
     username: u.username,
+    regNo: u.regNo ?? null,
     email: u.email ?? null,
     role: u.role,
     status: u.status,

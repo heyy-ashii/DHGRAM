@@ -8,8 +8,8 @@
 import { datastore } from '../config.js';
 import { connectDB, disconnectDB } from '../db.js';
 import { User } from '../models/User.js';
-import { loadRoster, initialPassword, usernameFromName } from '../roster.js';
-import { createStudentAccount } from '../utils/accounts.js';
+import { loadRoster, initialPassword, normRegNo, usernameFromName } from '../roster.js';
+import { createStudentAccount, ensureRegNo } from '../utils/accounts.js';
 
 const usingMongo = datastore() === 'mongo';
 if (usingMongo) await connectDB();
@@ -31,9 +31,14 @@ for (const student of students) {
     continue;
   }
   // A shared name takes a numeric suffix, so any of those variants means the
-  // student already has an account.
-  const existing = await User.findOne({ username: new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\.\\d+)?$`) });
+  // student already has an account. Also match on the registration number, which
+  // is unique per student and is what they sign in with.
+  const escaped = base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const existing = await User.findOne({
+    $or: [{ username: new RegExp(`^${escaped}(\\.\\d+)?$`) }, { regNo: normRegNo(student.regNo) }],
+  });
   if (existing) {
+    if (!existing.regNo) await ensureRegNo(existing, student);
     skipped += 1;
     continue;
   }

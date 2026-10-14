@@ -29,7 +29,7 @@ export function parseRosterCsv(text) {
 }
 
 const normAdNo = (v) => String(v ?? '').trim().toLowerCase().replace(/^u(?=\d)/, '');
-const normRegNo = (v) => String(v ?? '').trim().toLowerCase().replace(/^u(?=\d)/, '');
+export const normRegNo = (v) => String(v ?? '').trim().toLowerCase().replace(/^u(?=\d)/, '');
 const normName = (v) => String(v ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
 
 let cache = { at: 0, rows: [] };
@@ -63,6 +63,17 @@ export async function findStudentByUsername(username) {
   if (!want) return null;
   const rows = await loadRoster();
   return rows.find((r) => usernameFromName(r.name) === want) ?? null;
+}
+
+// A student may sign in with either their username or their registration number.
+// A username is never all-digits (it is derived from a name), so an all-digit
+// identifier is unambiguously a registration number and does not collide with a
+// username on the roster.
+export async function findStudentByIdentifier(identifier) {
+  const want = String(identifier ?? '').trim().toLowerCase().replace(/^u(?=\d)/, '');
+  if (!want) return null;
+  if (/^\d+$/.test(want)) return findStudentByRegNo(want);
+  return findStudentByUsername(want);
 }
 
 // Backwards-compatible name + registration lookup, kept for callers/tests that
