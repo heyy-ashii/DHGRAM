@@ -2,7 +2,7 @@ import { cn } from '../lib/utils'
 
 const SIZES = {
   sm: 'size-9 text-sm',
-  md: 'size-11 text-sm',
+  md: 'size-10 text-sm',
   lg: 'size-12 text-base',
   xl: 'size-16 text-xl',
 } as const

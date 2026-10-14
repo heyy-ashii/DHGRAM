@@ -36,9 +36,9 @@ export default function AdminLayout() {
               end={i.end}
               className={({ isActive }) =>
                 cn(
-                  'flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition',
+                  'flex shrink-0 items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium transition',
                   isActive
-                    ? 'bg-ink-900 text-white dark:bg-white dark:text-ink-900'
+                    ? 'bg-brand-soft font-bold text-brand dark:bg-brand/15 dark:text-blue-300'
                     : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800',
                 )
               }

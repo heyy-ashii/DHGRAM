@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { Flag } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Modal, Spinner } from './ui'
 import { useAuth } from '../context/AuthContext'
@@ -18,12 +18,14 @@ export function ReportButton({
   className,
   label = 'Report',
   preview,
+  icon,
 }: {
   kind: ReportKind
   targetId: string
   className?: string
   label?: string
   preview?: string
+  icon?: ReactNode
 }) {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
@@ -33,9 +35,9 @@ export function ReportButton({
       <button
         className={cn('btn-ghost px-3 py-1.5 text-ink-400 hover:text-amber-600', className)}
         onClick={() => setOpen(true)}
-        aria-label={`${label} this ${kind}`}
+        aria-label={`${label || 'Report'} this ${kind}`}
       >
-        <Flag className="size-5" />
+        {icon ?? <Flag className="size-5" />}
         {label && <span className="hidden sm:inline">{label}</span>}
       </button>
       <ReportModal open={open} onClose={() => setOpen(false)} kind={kind} targetId={targetId} preview={preview} />

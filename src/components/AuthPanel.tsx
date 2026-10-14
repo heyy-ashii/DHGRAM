@@ -1,4 +1,4 @@
-import { ArrowLeft, Eye, EyeOff, Info, Lock, MailCheck, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Info, MailCheck, ShieldCheck } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
@@ -6,6 +6,7 @@ import { errorMessage } from '../lib/api'
 import type { User } from '../lib/types'
 import { cn } from '../lib/utils'
 import BrandName from './BrandName'
+import Logo from './Logo'
 import { Spinner } from './ui'
 
 export type AuthMode = 'login' | 'forgot'
@@ -36,7 +37,7 @@ function PasswordInput({
       />
       <button
         type="button"
-        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-2 text-ink-400 transition hover:bg-ink-100 hover:text-ink-700 dark:hover:bg-ink-800"
+        className="absolute right-2 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-[10px] text-ink-400 transition hover:bg-ink-100 hover:text-ink-700 dark:hover:bg-ink-800"
         onClick={() => setShow((s) => !s)}
         aria-label={show ? 'Hide password' : 'Show password'}
       >
@@ -46,11 +47,8 @@ function PasswordInput({
   )
 }
 
-const titles = { login: 'Welcome back', forgot: 'Reset password' }
-const subtitles = {
-  login: 'Log in with the username on your student account.',
-  forgot: '',
-}
+const titles = { login: 'Welcome back.', forgot: 'Reset password.' }
+const subtitles = { login: 'Your community is right here.', forgot: '' }
 
 export default function AuthPanel({
   initialMode = 'login',
@@ -117,15 +115,17 @@ export default function AuthPanel({
   }
 
   const formCard = (
-    <div className={cn('w-full', !compact && 'card p-6 shadow-lift sm:p-8')}>
+    <div className={cn('w-full', !compact && 'max-w-[480px]')}>
       {mode === 'forgot' && (
         <button type="button" className="btn-ghost -ml-3 mb-2 px-3" onClick={() => switchMode('login')}>
           <ArrowLeft className="size-4" /> Back to login
         </button>
       )}
 
-      <h2 className={cn('font-bold', compact ? 'text-lg' : 'text-[1.75rem]')}>{titles[mode]}</h2>
-      <p className="mb-6 mt-1.5 text-sm text-ink-500">
+      <h2 className={cn('font-heading font-semibold tracking-[-0.5px]', compact ? 'text-2xl' : 'text-[32px] leading-[37px]')}>
+        {titles[mode]}
+      </h2>
+      <p className="mb-6 mt-2.5 text-sm text-ink-500">
         {mode === 'forgot'
           ? step === 'email'
             ? 'We will email you a code to reset your password.'
@@ -133,7 +133,7 @@ export default function AuthPanel({
           : subtitles[mode]}
       </p>
 
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={onSubmit} className="flex flex-col gap-6">
         {mode === 'login' && (
           <>
             <div>
@@ -149,15 +149,15 @@ export default function AuthPanel({
               />
             </div>
             <div>
-              <div className="flex items-center justify-between">
-                <label className="label" htmlFor="password">Password</label>
-                <button type="button" className="mb-1.5 text-xs font-semibold text-brand hover:underline" onClick={() => switchMode('forgot')}>
-                  Forgot password?
-                </button>
-              </div>
+              <label className="label" htmlFor="password">Password</label>
               <PasswordInput id="password" value={form.password} onChange={set('password')} autoComplete="current-password" />
             </div>
-            <div className="flex items-start gap-2.5 rounded-2xl bg-brand-soft px-4 py-3 text-xs leading-relaxed text-brand-dark dark:bg-brand/10 dark:text-blue-200">
+            <div className="flex justify-end">
+              <button type="button" className="text-[13px] font-bold text-brand hover:underline" onClick={() => switchMode('forgot')}>
+                Forgot password?
+              </button>
+            </div>
+            <div className="flex items-start gap-2.5 rounded-[10px] bg-brand-soft px-4 py-3 text-xs leading-relaxed text-brand-dark dark:bg-brand/10 dark:text-blue-200">
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
               <p>
                 Your account already exists. Your username is built from your name on the student list (e.g.{' '}
@@ -187,7 +187,7 @@ export default function AuthPanel({
             {step === 'code' && (
               <>
                 {info && (
-                  <p className="flex items-start gap-2 rounded-2xl bg-brand-soft p-3 text-sm text-brand-dark dark:bg-brand/10 dark:text-blue-200">
+                  <p className="flex items-start gap-2 rounded-[10px] bg-brand-soft p-3 text-sm text-brand-dark dark:bg-brand/10 dark:text-blue-200">
                     <MailCheck className="mt-0.5 size-4 shrink-0" /> {info}
                   </p>
                 )}
@@ -224,68 +224,72 @@ export default function AuthPanel({
         )}
 
         {error && (
-          <p className="rounded-2xl bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300" role="alert">
+          <p className="rounded-[10px] bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300" role="alert">
             {error}
           </p>
         )}
 
-        <button type="submit" className="btn-primary w-full py-3" disabled={busy}>
+        <button type="submit" className="btn-primary w-full" disabled={busy}>
           {busy && <Spinner className="size-4" />}
-          {mode === 'login' ? 'Login' : step === 'email' ? 'Send verification code' : 'Reset password'}
+          {mode === 'login' ? 'Log in' : step === 'email' ? 'Send verification code' : 'Reset password'}
         </button>
       </form>
+
+      {mode === 'login' && (
+        <>
+          <div className="my-6 h-px bg-ink-200 dark:bg-ink-800" />
+          <p className="text-[13px] text-ink-500">
+            Every student on the roster already has an account — no sign-up needed.
+          </p>
+        </>
+      )}
     </div>
   )
 
   if (compact) return formCard
 
   return (
-    <div className="mx-auto grid w-full max-w-5xl items-stretch gap-8 px-4 py-10 lg:grid-cols-2 lg:py-16">
-      {/* Marketing / brand side */}
-      <div className="relative hidden flex-col justify-between overflow-hidden rounded-[2rem] bg-ink-900 p-10 text-white lg:flex dark:bg-ink-900">
-        <div
-          className="pointer-events-none absolute -right-16 -top-16 size-72 rounded-full opacity-30 blur-3xl"
-          style={{ background: 'radial-gradient(circle, #2563eb, transparent 70%)' }}
-        />
-        <div
-          className="pointer-events-none absolute -bottom-20 -left-10 size-72 rounded-full opacity-20 blur-3xl"
-          style={{ background: 'radial-gradient(circle, #f97316, transparent 70%)' }}
-        />
-        <div className="relative">
-          <span className="eyebrow text-blue-300">
-            <Sparkles className="size-3.5" /> Share &amp; Message
+    <div className="grid min-h-screen w-full lg:grid-cols-[minmax(0,600px)_1fr]">
+      {/* Community introduction, from the handoff. */}
+      <div className="hidden flex-col justify-between bg-ink-50 px-16 py-12 lg:flex dark:bg-ink-950/50">
+        <Logo withText={false} className="h-[105px]" />
+        <div className="flex flex-col gap-6">
+          <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-ink-500">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden /> The student community
           </span>
-          <h1 className="mt-5 text-balance font-heading text-4xl font-bold leading-[1.08]">
-            A quieter place to share what's on your mind.
+          <h1 className="font-heading text-[50px] font-semibold leading-[58px] tracking-[-0.5px]">
+            Share thoughts.<br />Message students.
           </h1>
-          <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/70">
-            Post thoughts, follow the community feed, and message other students one-to-one or in groups — all in one
-            calm, focused space.
+          <p className="max-w-[472px] text-base leading-[25px] text-ink-500">
+            For the ideas between classes, the small wins, and the people who make campus feel like home.
           </p>
+          <figure className="flex flex-col gap-5 rounded-[20px] border border-ink-200 bg-white p-6 dark:border-ink-800 dark:bg-ink-900">
+            <blockquote className="font-heading text-2xl font-semibold leading-7 tracking-[-0.5px]">
+              "Some of the best things I've learned weren't on the syllabus."
+            </blockquote>
+            <figcaption className="flex items-center gap-2.5 text-xs text-ink-500">
+              <span className="grid size-8 place-items-center rounded-full bg-gradient-to-br from-brand to-accent text-xs font-bold text-white">A</span>
+              Amina Rahman · @amina.rahman
+            </figcaption>
+          </figure>
         </div>
-
-        <div className="relative space-y-3">
-          {[
-            { icon: Sparkles, text: 'Share thoughts & stories with your batch' },
-            { icon: Lock, text: 'Private one-to-one and group messages' },
-            { icon: ShieldCheck, text: 'Every student already has an account' },
-          ].map(({ icon: Icon, text }) => (
-            <div key={text} className="flex items-center gap-3 rounded-2xl bg-white/5 px-4 py-3 ring-1 ring-white/10">
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/10">
-                <Icon className="size-4" />
-              </span>
-              <span className="text-sm font-medium text-white/85">{text}</span>
-            </div>
-          ))}
-        </div>
-
-        <p className="relative text-xs text-white/50">
-          <BrandName /> · for students
+        <p className="text-[11px] text-ink-400">
+          <BrandName /> · Made by Ashique.Pilassery
         </p>
       </div>
 
       {/* Form side */}
-      <div className="flex items-center justify-center">{formCard}</div>
+      <div className="flex items-center justify-center px-6 py-16">
+        <div className="flex w-full max-w-[480px] flex-col">
+          <div className="mb-8 flex items-center justify-between lg:hidden">
+            <Logo />
+          </div>
+          {formCard}
+          <p className="mt-8 flex items-center gap-2 text-xs text-ink-400">
+            <ShieldCheck className="size-4" /> Your account is created from the official student roster.
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

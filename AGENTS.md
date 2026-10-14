@@ -190,11 +190,18 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
   Sans) and `font-heading` (Fraunces), warm `ink-*` neutrals, `brand` (blue),
   `accent` (coral), plus a soft shadow scale (`shadow-soft`, `shadow-lift`).
   `index.html` loads both Google Fonts.
-- Reuse the semantic classes rather than raw utilities: `.card`, `.btn-primary`,
-  `.btn-dark`, `.btn-outline`, `.btn-ghost`, `.input`, `.label`, `.eyebrow`,
-  `.animate-rise`, `.animate-pop`.
+- Reuse the semantic classes rather than raw utilities: `.card`, `.panel`,
+  `.btn-primary`, `.btn-dark`, `.btn-outline`, `.btn-ghost`, `.input`, `.label`,
+  `.eyebrow`, `.animate-rise`, `.animate-pop`.
 - **Use `ink-*` for neutrals, never `neutral-*`/`gray-*`** — a cold gray breaks
   the warm palette.
+- Radius scale from the Figma handoff: **control 10px, card 16px, panel 24px**.
+  Controls are 48px tall. `.card` is the 16px surface; `.panel` is the 24px one
+  (the `Modal` uses it).
+- The app shell is `src/components/PublicLayout.tsx`: a 220px desktop rail
+  (`Sidebar`) on the left, the `Navbar` header on top, and a 4-item mobile
+  bottom bar. The nav model is shared in `src/lib/nav.ts`. `/login` is the one
+  route that renders full-bleed, without the shell.
 - Shared primitives are in `src/components/ui.tsx`: `Skeleton`, `FeedSkeleton`,
   `PostCardSkeleton`, `Toaster`, `Modal`, `EmptyState`, `ErrorState`, `Spinner`.
   Prefer content-shaped skeletons over a lone page spinner.

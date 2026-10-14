@@ -80,27 +80,27 @@ export default function Account() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold">Edit profile</h1>
+    <div className="flex flex-col gap-7 px-5 py-6 md:px-10 md:py-10">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <h1 className="font-heading text-[28px] font-semibold leading-8 tracking-[-0.5px] md:text-[32px] md:leading-[37px]">Edit profile</h1>
           <p className="text-sm text-ink-500">{user!.email ?? `@${user!.username}`}</p>
         </div>
-        <div className="flex gap-2">
-          <button
-            className="btn-ghost"
-            onClick={async () => {
-              await logout()
-              toast('Logged out')
-              navigate('/')
-            }}
-          >
-            <LogOut className="size-4" /> Logout
-          </button>
-        </div>
-      </div>
+        <button
+          className="btn-ghost"
+          onClick={async () => {
+            await logout()
+            toast('Logged out')
+            navigate('/')
+          }}
+        >
+          <LogOut className="size-4" /> Logout
+        </button>
+      </header>
 
-      <form onSubmit={saveProfile} className="card mt-8 space-y-4 p-6">
+      <div className="flex flex-col gap-10 lg:flex-row">
+      <div className="flex min-w-0 flex-1 flex-col gap-6">
+      <form onSubmit={saveProfile} className="card flex flex-col gap-5 p-6">
         <h2 className="font-bold">Profile</h2>
         <div className="flex items-center gap-4">
           <div className="relative shrink-0">
@@ -141,10 +141,10 @@ export default function Account() {
             <input id="acc-username" className="input" value={profile.username} pattern="[a-z0-9._]{3,30}" onChange={(e) => setProfile({ ...profile, username: e.target.value.toLowerCase() })} required />
           </div>
         </div>
-        <button className="btn-primary" disabled={busy === 'profile'}>{busy === 'profile' && <Spinner className="size-4" />} Save profile</button>
+        <button className="btn-primary self-start" disabled={busy === 'profile'}>{busy === 'profile' && <Spinner className="size-4" />} Save profile</button>
       </form>
 
-      <form onSubmit={savePassword} className="card mt-6 space-y-4 p-6">
+      <form onSubmit={savePassword} className="card flex flex-col gap-5 p-6">
         <h2 className="font-bold">Change password</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -156,8 +156,23 @@ export default function Account() {
             <input id="acc-new" type="password" className="input" autoComplete="new-password" minLength={8} value={pw.password} onChange={(e) => setPw({ ...pw, password: e.target.value })} required />
           </div>
         </div>
-        <button className="btn-primary" disabled={busy === 'password'}>{busy === 'password' && <Spinner className="size-4" />} Update password</button>
+        <button className="btn-primary self-start" disabled={busy === 'password'}>{busy === 'password' && <Spinner className="size-4" />} Update password</button>
       </form>
+      </div>
+
+        <aside className="w-full lg:w-[290px] lg:shrink-0">
+          <div className="card flex flex-col gap-4 p-6">
+            <h2 className="font-heading text-2xl font-semibold leading-7 tracking-[-0.5px]">Your space, your words.</h2>
+            <p className="text-[13px] leading-5 text-ink-600 dark:text-ink-300">
+              Keep your name and photo recognisable so classmates know it's you. Your username is how people find you in Messages.
+            </p>
+            <div className="h-px bg-ink-200 dark:bg-ink-800" />
+            <p className="text-xs leading-[19px] text-ink-400">
+              Usernames are lowercase letters, numbers, dots and underscores.
+            </p>
+          </div>
+        </aside>
+      </div>
     </div>
   )
 }
