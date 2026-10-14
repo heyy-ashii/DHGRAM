@@ -1,4 +1,4 @@
-import { ArrowLeft, Eye, EyeOff, Lock, MailCheck, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Info, Lock, MailCheck, ShieldCheck, Sparkles } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
@@ -8,7 +8,7 @@ import { cn } from '../lib/utils'
 import BrandName from './BrandName'
 import { Spinner } from './ui'
 
-export type AuthMode = 'login' | 'signup' | 'forgot'
+export type AuthMode = 'login' | 'forgot'
 
 function PasswordInput({
   value,
@@ -46,10 +46,9 @@ function PasswordInput({
   )
 }
 
-const titles = { login: 'Welcome back', signup: 'Create your account', forgot: 'Reset password' }
+const titles = { login: 'Welcome back', forgot: 'Reset password' }
 const subtitles = {
-  login: 'Log in with your username or email.',
-  signup: 'Use your registration number from the student list and choose a password.',
+  login: 'Log in with the username on your student account.',
   forgot: '',
 }
 
@@ -74,7 +73,6 @@ export default function AuthPanel({
     password: '',
     email: '',
     code: '',
-    regNo: '',
   })
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }))
 
@@ -112,10 +110,6 @@ export default function AuthPanel({
   const onSubmit = (e: FormEvent) => {
     e.preventDefault()
     if (mode === 'login') return run(async () => done(await auth.login(form.identifier, form.password), 'Welcome back!'))
-    if (mode === 'signup')
-      return run(async () =>
-        done(await auth.signup({ regNo: form.regNo, password: form.password }), 'Account created. Welcome to DHGRAM!'),
-      )
     if (step === 'email') return sendCode()
     return run(async () =>
       done(await auth.resetPassword({ email: form.email, code: form.code, password: form.password }), 'Password updated'),
@@ -124,26 +118,6 @@ export default function AuthPanel({
 
   const formCard = (
     <div className={cn('w-full', !compact && 'card p-6 shadow-lift sm:p-8')}>
-      {mode !== 'forgot' && (
-        <div className="mb-6 grid grid-cols-2 rounded-full bg-ink-100 p-1 dark:bg-ink-800" role="tablist">
-          {(['login', 'signup'] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              role="tab"
-              aria-selected={mode === m}
-              onClick={() => switchMode(m)}
-              className={cn(
-                'rounded-full py-2 text-sm font-semibold transition',
-                mode === m ? 'bg-white text-ink-900 shadow-soft dark:bg-ink-950 dark:text-white' : 'text-ink-500',
-              )}
-            >
-              {m === 'login' ? 'Login' : 'Create Account'}
-            </button>
-          ))}
-        </div>
-      )}
-
       {mode === 'forgot' && (
         <button type="button" className="btn-ghost -ml-3 mb-2 px-3" onClick={() => switchMode('login')}>
           <ArrowLeft className="size-4" /> Back to login
@@ -183,47 +157,13 @@ export default function AuthPanel({
               </div>
               <PasswordInput id="password" value={form.password} onChange={set('password')} autoComplete="current-password" />
             </div>
-          </>
-        )}
-
-        {mode === 'signup' && (
-          <>
-            <div>
-              <label className="label" htmlFor="regNo">Registration number</label>
-              <input
-                id="regNo"
-                className="input"
-                value={form.regNo}
-                onChange={(e) => set('regNo')(e.target.value)}
-                inputMode="numeric"
-                autoComplete="off"
-                placeholder="e.g. 250001"
-                required
-              />
-              <p className="mt-1.5 text-xs text-ink-500">
-                The registration number on the student list. No name needed — we find you by this.
-              </p>
-            </div>
-            <div>
-              <label className="label" htmlFor="signup-password">Password</label>
-              <PasswordInput
-                id="signup-password"
-                value={form.password}
-                onChange={set('password')}
-                autoComplete="new-password"
-              />
-              <p className="mt-1.5 text-xs text-ink-500">At least 8 characters.</p>
-            </div>
-            <div className="rounded-2xl bg-brand-soft px-4 py-3 text-xs leading-relaxed text-brand-dark dark:bg-brand/10 dark:text-blue-200">
-              <p className="font-semibold text-ink-800 dark:text-ink-100">Your first login</p>
-              <p className="mt-1">
-                Sign in with the username we build from your roster name and the password you choose above. If you
-                leave the password blank, your first password is your <span className="font-semibold">registration
-                number followed by your admission number</span> — for example registration 250001 with admission
-                3411 gives <span className="font-semibold">2500013411</span>.
-              </p>
-              <p className="mt-1">
-                Your registration number stays tied to your account on the student list.
+            <div className="flex items-start gap-2.5 rounded-2xl bg-brand-soft px-4 py-3 text-xs leading-relaxed text-brand-dark dark:bg-brand/10 dark:text-blue-200">
+              <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <p>
+                Your account already exists. Your username is built from your name on the student list (e.g.{' '}
+                <span className="font-semibold">jiyad.cp</span>). Logging in for the first time? Your password is your{' '}
+                <span className="font-semibold">registration number followed by your admission number</span> — for
+                example registration 250001 with admission 3411 gives <span className="font-semibold">2500013411</span>.
               </p>
             </div>
           </>
@@ -291,21 +231,9 @@ export default function AuthPanel({
 
         <button type="submit" className="btn-primary w-full py-3" disabled={busy}>
           {busy && <Spinner className="size-4" />}
-          {mode === 'login'
-            ? 'Login'
-            : mode === 'signup'
-              ? 'Create account'
-              : step === 'email'
-                ? 'Send verification code'
-                : 'Reset password'}
+          {mode === 'login' ? 'Login' : step === 'email' ? 'Send verification code' : 'Reset password'}
         </button>
       </form>
-
-      {!compact && mode === 'signup' && (
-        <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-xs text-ink-400">
-          <ShieldCheck className="size-3.5" /> Verified against the official student roster.
-        </p>
-      )}
     </div>
   )
 
@@ -340,7 +268,7 @@ export default function AuthPanel({
           {[
             { icon: Sparkles, text: 'Share thoughts & stories with your batch' },
             { icon: Lock, text: 'Private one-to-one and group messages' },
-            { icon: ShieldCheck, text: 'Sign-up verified against the student roster' },
+            { icon: ShieldCheck, text: 'Every student already has an account' },
           ].map(({ icon: Icon, text }) => (
             <div key={text} className="flex items-center gap-3 rounded-2xl bg-white/5 px-4 py-3 ring-1 ring-white/10">
               <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white/10">

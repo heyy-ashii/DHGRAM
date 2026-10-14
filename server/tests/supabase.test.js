@@ -42,26 +42,26 @@ describeIfDb('DHGRAM on Supabase (Postgres)', () => {
     expect(res.body.datastore).toBe('supabase');
   });
 
-  it('creates an account from the roster, logs in and reads /me', async () => {
+  it('provisions an account on first login, then reads /me', async () => {
     const agent = request.agent(app);
-    const ok = await agent.post('/api/v1/auth/signup').send({ regNo: '250001' });
-    expect(ok.status).toBe(201);
-    expect(ok.body.data.user.username).toBe('new.student');
-    expect(ok.body.data.user.role).toBe('user');
-    expect(ok.body.data.user).not.toHaveProperty('password');
+    const login = await agent.post('/api/v1/auth/login').send({ identifier: 'new.student', password: '2500013411' });
+    expect(login.status).toBe(200);
+    expect(login.body.data.user.username).toBe('new.student');
+    expect(login.body.data.user.role).toBe('user');
+    expect(login.body.data.user).not.toHaveProperty('password');
 
     const me = await agent.get('/api/v1/auth/me');
     expect(me.body.data.user.username).toBe('new.student');
 
-    const login = await request(app).post('/api/v1/auth/login').send({ identifier: 'new.student', password: '2500013411' });
-    expect(login.status).toBe(200);
+    const again = await request(app).post('/api/v1/auth/login').send({ identifier: 'new.student', password: '2500013411' });
+    expect(again.status).toBe(200);
 
     const bad = await request(app).post('/api/v1/auth/login').send({ identifier: 'new.student', password: 'wrongpass' });
     expect(bad.status).toBe(401);
   });
 
-  it('rejects a registration number that is not on the roster', async () => {
-    expect((await request(app).post('/api/v1/auth/signup').send({ regNo: '999999' })).status).toBe(403);
+  it('rejects a username that is not on the roster', async () => {
+    expect((await request(app).post('/api/v1/auth/login').send({ identifier: 'ghost.user', password: '2500013411' })).status).toBe(401);
   });
 
   it('enforces the OTP resend cooldown and rejects a wrong code', async () => {
@@ -89,7 +89,7 @@ describeIfDb('DHGRAM on Supabase (Postgres)', () => {
 
   it('runs the chat flow', async () => {
     const user = request.agent(app);
-    await user.post('/api/v1/auth/signup').send({ regNo: '250002' });
+    await user.post('/api/v1/auth/login').send({ identifier: 'chat.student', password: '2500023412' });
 
     const sent = await user.post('/api/v1/chat/me/messages').send({ body: 'Hello admin' });
     expect(sent.status).toBe(201);

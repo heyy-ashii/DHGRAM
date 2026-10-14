@@ -1,13 +1,13 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Navigate } from 'react-router-dom'
-import AuthPanel, { type AuthMode } from '../components/AuthPanel'
+import AuthPanel from '../components/AuthPanel'
 import { useAuth } from '../context/AuthContext'
 import { usePageMeta } from '../lib/usePageMeta'
 
 const safeNext = (n: string | null) => (n && n.startsWith('/') && !n.startsWith('//') ? n : null)
 
-export default function Login({ initialMode = 'login' }: { initialMode?: AuthMode }) {
-  usePageMeta(initialMode === 'signup' ? 'Create Account' : 'Login')
+export default function Login() {
+  usePageMeta('Login')
   const { user } = useAuth()
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -17,7 +17,7 @@ export default function Login({ initialMode = 'login' }: { initialMode?: AuthMod
 
   return (
     <div className="px-4">
-      <AuthPanel initialMode={initialMode} onSuccess={(u) => navigate(next ?? (u.role === 'admin' ? '/messages' : '/'), { replace: true })} />
+      <AuthPanel onSuccess={(u) => navigate(next ?? (u.role === 'admin' ? '/messages' : '/'), { replace: true })} />
     </div>
   )
 }

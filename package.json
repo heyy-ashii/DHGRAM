@@ -13,6 +13,7 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "seed:admin": "node server/scripts/seed-admin.js",
+    "seed:students": "node server/scripts/seed-students.js",
     "supabase:apply": "node server/scripts/supabase-apply-schema.js"
   },
   "dependencies": {

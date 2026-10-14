@@ -15,6 +15,7 @@ entry in `api/index.js`.
 - `npm test` – vitest (spins up an in-memory MongoDB)
 - `npm run lint` / `npm run typecheck` / `npm run build`
 - `npm run seed:admin` – needs `ADMIN_USERNAME` and `ADMIN_PASSWORD`
+- `npm run seed:students` – creates an account for every roster student (idempotent)
 - `npm run supabase:apply` – apply every `supabase/migrations/*.sql` to `SUPABASE_DB_URL`
 
 ## Data layer
@@ -166,17 +167,21 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
 
 ## Sign-up & auth
 
-- Sign-up is **roster-verified**, not email OTP: the student enters only their
-  **registration number** and the server looks the row up by it in the official
-  student spreadsheet (`server/roster.js` `findStudentByRegNo`, used by
-  `server/routes/auth.js` signup). The name is deliberately **not** asked for:
-  students don't reliably know its exact case/spacing as written on the sheet.
-  The roster name still seeds the profile and the derived username, and duplicate
-  names get a numeric suffix (`name.2`) instead of a hard 409. The student now
-  **chooses their own password** on the signup form (minimum 8 characters); if the
-  field is omitted the server falls back to the roster default of registration
-  number + admission number (e.g. `2500013411`). Password reset still uses email
-  OTP (`requestResetCode` / `resetPassword`).
+- **There is no sign-up.** Every student on the official roster already has an
+  account, so the app is login-only: `AuthPanel` shows just Login + Forgot
+  password, `/signup` redirects to `/login`, and `POST /auth/signup` was removed.
+- Accounts are **provisioned from the roster**, never created by hand.
+  `server/utils/accounts.js` `createStudentAccount(student, password?)` builds the
+  user: the username is derived from the roster name (`usernameFromName`), the
+  password defaults to registration number + admission number (e.g. `2500013411`),
+  and duplicate names take a numeric suffix (`name.2`).
+- It is called two ways: **lazily on first login** — if the identifier is an
+  unknown username, `findStudentByUsername` looks up the roster row
+  (`server/roster.js`) and creates the account on the spot — and **in bulk** by
+  `npm run seed:students` (`server/scripts/seed-students.js`), which is idempotent
+  and safe to re-run as the roster grows.
+- Login is username/email + password (`POST /auth/login`); password reset still
+  uses email OTP (`requestResetCode` / `resetPassword`).
 
 ## UI & design system
 
