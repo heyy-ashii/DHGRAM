@@ -140,6 +140,28 @@ export interface UserDirectory {
   data: { users: PeerUser[] }
 }
 
+// A student in the admin support inbox's full directory. `conversationId` is null
+// until a support thread exists for them.
+export interface SupportStudent {
+  _id: string
+  name: string
+  username: string
+  regNo?: string | null
+  avatar?: string | null
+  conversationId: string | null
+  status: 'open' | 'closed' | null
+  lastMessage: string
+  lastMessageAt: string | null
+  unreadForAdmin: number
+}
+
+export interface SupportDirectory {
+  total: number
+  page: number
+  pages: number
+  data: { students: SupportStudent[] }
+}
+
 export interface Stats {
   users: number
   admins: number

@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { api } from './api'
-import type { AdminThoughtsList, GroupSummary, MessageThread, PeerMessage, PostList, ReportList, Stats, Story, StoryGroup, User, UserDirectory } from './types'
+import type { AdminThoughtsList, GroupSummary, MessageThread, PeerMessage, PostList, ReportList, Stats, Story, StoryGroup, SupportDirectory, User, UserDirectory } from './types'
 
 export const useStats = () =>
   useQuery({
@@ -58,6 +58,16 @@ export const useStudentDirectory = (q: string, enabled = true) =>
   useQuery({
     queryKey: ['messages', 'directory', q],
     queryFn: () => api<UserDirectory>('/messages/directory', { query: { q, limit: 30 } }),
+    enabled,
+  })
+
+// The admin support inbox's full student list, paginated for "load more".
+export const useSupportDirectory = (q: string, unanswered = false, enabled = true) =>
+  useInfiniteQuery({
+    queryKey: ['admin', 'support', 'directory', { q, unanswered }],
+    queryFn: ({ pageParam }) => api<SupportDirectory>('/admin/support/directory', { query: { q, unanswered: unanswered ? 'true' : undefined, page: pageParam, limit: 30 } }),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.page < last.pages ? last.page + 1 : undefined),
     enabled,
   })
 

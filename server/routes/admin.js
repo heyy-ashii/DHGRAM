@@ -230,6 +230,81 @@ router.delete(
 );
 
 // ---------------------------------------------------------------------------
+// Support inbox: the full student directory
+// ---------------------------------------------------------------------------
+
+// Unlike GET /chat/conversations (only students who wrote in), this lists every
+// student so an admin can open a support thread with anyone. Each row carries its
+// conversation state when one exists. `unanswered` narrows to students with no
+// thread yet.
+const supportDirectoryQuery = z.object({
+  q: z.string().trim().max(100).optional(),
+  unanswered: z.enum(['true', 'false']).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+});
+
+router.get(
+  '/support/directory',
+  validate(supportDirectoryQuery, 'query'),
+  asyncHandler(async (req, res) => {
+    const { q, unanswered, page, limit } = req.validated.query;
+    const filter = { role: 'user' };
+    if (q) {
+      const rx = new RegExp(escapeRegex(q), 'i');
+      filter.$or = [{ name: rx }, { username: rx }, { regNo: rx }];
+    }
+    const students = await User.find(filter).sort({ name: 1 }).lean();
+
+    // One conversation per student (unique `user`), so this is a simple map.
+    const conversations = await Conversation.find({ user: { $in: students.map((s) => s._id) } }).lean();
+    const byUser = new Map(conversations.map((c) => [String(c.user), c]));
+
+    let rows = students.map((s) => {
+      const c = byUser.get(String(s._id));
+      return {
+        _id: s._id,
+        name: s.name ?? '',
+        username: s.username ?? '',
+        regNo: s.regNo ?? null,
+        avatar: s.avatar ?? null,
+        conversationId: c?._id ?? null,
+        status: c?.status ?? null,
+        lastMessage: c?.lastMessage ?? '',
+        lastMessageAt: c?.lastMessageAt ?? null,
+        unreadForAdmin: c?.unreadForAdmin ?? 0,
+      };
+    });
+    if (unanswered === 'true') rows = rows.filter((r) => !r.conversationId);
+
+    const total = rows.length;
+    const start = (page - 1) * limit;
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      status: 'success',
+      total,
+      page,
+      pages: Math.max(1, Math.ceil(total / limit)),
+      data: { students: rows.slice(start, start + limit) },
+    });
+  }),
+);
+
+// Open (or reopen) a support thread with a student picked from the directory.
+router.post(
+  '/support/conversations',
+  validate(z.object({ userId: objectId })),
+  asyncHandler(async (req, res) => {
+    const student = await User.findById(req.body.userId);
+    if (!student || student.role !== 'user') throw new AppError('That account is not available', 404);
+    const conversation =
+      (await Conversation.findOne({ user: student._id })) || (await Conversation.create({ user: student._id }));
+    await conversation.populate('user', 'name username email');
+    res.status(201).json({ status: 'success', data: { conversation } });
+  }),
+);
+
+// ---------------------------------------------------------------------------
 // Reports queue
 // ---------------------------------------------------------------------------
 
