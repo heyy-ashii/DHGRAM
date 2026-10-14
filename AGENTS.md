@@ -231,3 +231,11 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
   TLS aborts (`ssl3_read_bytes:tlsv1 alert internal error`) because the Atlas IP
   allow-list rejects the sandbox egress IP. Add the IP (or `0.0.0.0/0`) in Atlas ▸
   Network Access, or run against the Supabase/Sheets datastore instead.
+- Supabase migrations are applied **out of band** (`npm run supabase:apply`), so a
+  deployed database can lag the code. A column the code expects but the table does
+  not have makes Postgres reject the whole statement (`column "reg_no" does not
+  exist`, code `42703`), which surfaced as a 500 on **every** non-email login when
+  `0007_user_reg_no.sql` had not been applied. The Supabase ODM now caches each
+  table's real columns and drops unknown ones from writes, so login degrades to
+  username-only instead of failing. Still apply the migration for registration-
+  number login to work.

@@ -8,7 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 //   TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/dhgram npm test
 //
 process.env.NODE_ENV = 'test';
-process.env.ROSTER_CSV = 'AD.NO,REG. NO,NAME,PHONE,EMAIL\n3411,250001,New Student,,\n3412,250002,Chat Student,,\n';
+process.env.ROSTER_CSV = 'AD.NO,REG. NO,NAME,PHONE,EMAIL\n3411,250001,New Student,,\n3412,250002,Chat Student,,\n3413,250003,Drift Student,,\n';
 
 const DB_URL = process.env.TEST_DATABASE_URL;
 const describeIfDb = DB_URL ? describe : describe.skip;
@@ -203,5 +203,35 @@ describeIfDb('DHGRAM on Supabase (Postgres)', () => {
     // Starting the same chat again reuses the thread rather than duplicating it.
     await one.post('/api/v1/messages/start').send({ userId: other._id });
     expect((await one.get('/api/v1/messages')).body.data.conversations).toHaveLength(1);
+  });
+
+  it('keeps login working when the database lags the code (missing reg_no column)', async () => {
+    // A deployed database can miss a migration the code already assumes. Dropping
+    // app_users.reg_no reproduces the old 500 on every non-email login and checks
+    // that the write path drops unknown columns instead of failing the request.
+    await db().query('alter table app_users drop column if exists reg_no');
+    try {
+      // An unknown identifier returns 401, not a 500.
+      const unknown = await request(app).post('/api/v1/auth/login').send({ identifier: 'ghost.user', password: 'whatever1' });
+      expect(unknown.status).toBe(401);
+
+      // A roster student is still provisioned on first login by registration number.
+      const first = await request(app).post('/api/v1/auth/login').send({ identifier: '250003', password: '2500033413' });
+      expect(first.status).toBe(200);
+      expect(first.body.data.user.username).toBe('drift.student');
+      expect(first.body.data.user.regNo).toBeNull();
+      const id = first.body.data.user._id;
+
+      // The derived username keeps working afterwards.
+      const byName = await request(app).post('/api/v1/auth/login').send({ identifier: 'drift.student', password: '2500033413' });
+      expect(byName.status).toBe(200);
+
+      // And the registration number resolves to the same account (no duplicate).
+      const byReg = await request(app).post('/api/v1/auth/login').send({ identifier: '250003', password: '2500033413' });
+      expect(byReg.status).toBe(200);
+      expect(byReg.body.data.user._id).toBe(id);
+    } finally {
+      await db().query('alter table app_users add column if not exists reg_no text');
+    }
   });
 });

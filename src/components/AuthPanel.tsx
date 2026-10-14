@@ -144,7 +144,7 @@ export default function AuthPanel({
                 value={form.identifier}
                 onChange={(e) => set('identifier')(e.target.value)}
                 autoComplete="username"
-                placeholder="e.g. jiyad.cp or 250001"
+                placeholder="Username or registration number"
                 required
               />
             </div>
