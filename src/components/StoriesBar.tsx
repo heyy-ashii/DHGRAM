@@ -222,13 +222,11 @@ function Ring({ unseen, children }: { unseen: boolean; children: ReactNode }) {
   return (
     <span
       className={cn(
-        'grid size-[68px] place-items-center rounded-full p-[3px]',
-        unseen
-          ? 'bg-[conic-gradient(from_140deg,#f9ce34,#ee2a7b,#6228d7,#f9ce34)]'
-          : 'bg-ink-200 dark:bg-ink-700',
+        'grid size-[54px] place-items-center rounded-full border-2 p-[3px]',
+        unseen ? 'border-brand' : 'border-ink-200 dark:border-ink-700',
       )}
     >
-      <span className="grid size-full place-items-center rounded-full bg-ink-50 p-[2px] dark:bg-ink-950">{children}</span>
+      {children}
     </span>
   )
 }
@@ -261,10 +259,15 @@ export default function StoriesBar({ groups }: { groups: StoryGroup[] }) {
   }
 
   return (
-    <div className="border-b border-ink-200 bg-white dark:border-ink-800 dark:bg-ink-900">
-      <div className="no-scrollbar flex gap-4 overflow-x-auto px-4 py-4">
+    <div className="card flex flex-col gap-5 p-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-[13px] font-bold">Around campus</h2>
+        <span className="text-[11px] text-ink-400">24h</span>
+      </div>
+
+      <div className="no-scrollbar flex items-start gap-6 overflow-x-auto pb-1">
         {user && (
-          <div className="flex w-16 shrink-0 flex-col items-center gap-1.5">
+          <div className="flex w-[54px] shrink-0 flex-col items-center gap-2">
             <button
               className="relative"
               onClick={() => (mineIndex >= 0 ? setOpenAt(mineIndex) : fileRef.current?.click())}
@@ -273,11 +276,11 @@ export default function StoriesBar({ groups }: { groups: StoryGroup[] }) {
               <Ring unseen={Boolean(myGroup?.unseen)}>
                 <Avatar user={user} size="lg" />
               </Ring>
-              <span className="absolute -bottom-0.5 -right-0.5 grid size-6 place-items-center rounded-full border-2 border-white bg-brand text-white dark:border-ink-900">
-                {busy ? <Spinner className="size-3.5" /> : <Plus className="size-3.5" />}
+              <span className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full border-2 border-white bg-brand text-white dark:border-ink-900">
+                {busy ? <Spinner className="size-3" /> : <Plus className="size-3" />}
               </span>
             </button>
-            <span className="w-full truncate text-center text-[11px] font-medium">Your story</span>
+            <span className="w-full truncate text-center text-[10px] leading-4">Your story</span>
           </div>
         )}
 
@@ -287,21 +290,19 @@ export default function StoriesBar({ groups }: { groups: StoryGroup[] }) {
           return (
             <button
               key={g.user._id}
-              className="flex w-16 shrink-0 flex-col items-center gap-1.5"
+              className="flex w-[54px] shrink-0 flex-col items-center gap-2"
               onClick={() => setOpenAt(start)}
               aria-label={`View ${g.user.name}'s story`}
             >
               <Ring unseen={g.unseen}>
                 <Avatar user={g.user} size="lg" />
               </Ring>
-              <span className="w-full truncate text-center text-[11px] font-medium">{g.user.name || 'Student'}</span>
+              <span className="w-full truncate text-center text-[10px] leading-4">{g.user.name?.split(' ')[0] || 'Student'}</span>
             </button>
           )
         })}
 
-        {!groups.length && !user && (
-          <p className="py-3 text-sm text-ink-500">Log in to share a story.</p>
-        )}
+        {!groups.length && !user && <p className="py-2 text-sm text-ink-500">Log in to share a story.</p>}
       </div>
 
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPick} />

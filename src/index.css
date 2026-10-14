@@ -28,6 +28,13 @@
 
   --shadow-soft: 0 1px 2px rgb(28 25 23 / 0.04), 0 4px 16px -8px rgb(28 25 23 / 0.12);
   --shadow-lift: 0 2px 4px rgb(28 25 23 / 0.05), 0 12px 32px -12px rgb(28 25 23 / 0.18);
+
+  /* Radius scale from the handoff: controls 10, cards 16, panels/overlays 24. */
+  --radius-control: 10px;
+  --radius-card: 16px;
+  --radius-panel: 24px;
+  /* Controls are 48px high; icon actions stay at least 44px. */
+  --control-h: 48px;
 }
 
 html {
@@ -68,16 +75,16 @@ h3 {
   .btn-outline,
   .btn-ghost,
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-[transform,background-color,color,box-shadow,border-color] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand active:scale-[0.97] disabled:pointer-events-none disabled:opacity-55;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-[10px] px-[18px] text-[13px] font-bold transition-[transform,background-color,color,box-shadow,border-color] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand active:scale-[0.97] disabled:pointer-events-none disabled:opacity-55;
   }
   .btn-primary {
-    @apply bg-brand text-white shadow-soft hover:bg-brand-dark hover:shadow-lift;
+    @apply bg-brand text-white hover:bg-brand-dark;
   }
   .btn-dark {
-    @apply bg-ink-900 text-white shadow-soft hover:bg-ink-700 dark:bg-white dark:text-ink-900 dark:hover:bg-ink-200;
+    @apply bg-ink-900 text-white hover:bg-ink-700 dark:bg-white dark:text-ink-900 dark:hover:bg-ink-200;
   }
   .btn-outline {
-    @apply border border-ink-200 bg-white/80 text-ink-900 hover:border-ink-300 hover:bg-white dark:border-ink-800 dark:bg-ink-900/80 dark:text-white dark:hover:border-ink-700 dark:hover:bg-ink-900;
+    @apply border border-ink-200 bg-white text-ink-900 hover:border-ink-300 hover:bg-ink-50 dark:border-ink-800 dark:bg-ink-900 dark:text-white dark:hover:border-ink-700 dark:hover:bg-ink-800;
   }
   .btn-ghost {
     @apply text-ink-500 hover:bg-ink-100 hover:text-ink-900 dark:text-ink-300 dark:hover:bg-ink-800 dark:hover:text-white;
@@ -86,20 +93,31 @@ h3 {
     @apply bg-red-600 text-white hover:bg-red-700;
   }
   .input {
-    @apply w-full rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-ink-400 focus:border-brand focus:ring-4 focus:ring-brand/12 dark:border-ink-800 dark:bg-ink-900;
+    @apply w-full min-h-12 rounded-[10px] border border-ink-200 bg-white px-3.5 py-2.5 text-sm text-ink-900 outline-none transition placeholder:text-ink-400 focus:border-brand focus:ring-2 focus:ring-brand/20 dark:border-ink-800 dark:bg-ink-900 dark:text-ink-100;
   }
   .label {
-    @apply mb-1.5 block text-[13px] font-semibold text-ink-700 dark:text-ink-300;
+    @apply mb-2 block text-[13px] font-semibold text-ink-900 dark:text-ink-100;
   }
   .card {
-    @apply rounded-3xl border border-ink-200/80 bg-white shadow-soft dark:border-ink-800 dark:bg-ink-900;
+    @apply rounded-[16px] border border-ink-200 bg-white dark:border-ink-800 dark:bg-ink-900;
+  }
+  /* The larger container used for overlays and grouped panels. */
+  .panel {
+    @apply rounded-[24px] border border-ink-200 bg-white dark:border-ink-800 dark:bg-ink-900;
   }
   .chip {
     @apply inline-flex items-center rounded-full border border-ink-200 px-4 py-2 text-sm font-medium transition hover:border-ink-300 dark:border-ink-800;
   }
+  /* Sidebar route item: 48px tall, 10px radius, 12px icon gap. */
+  .nav-item {
+    @apply flex h-12 items-center gap-3 rounded-[10px] px-3.5 text-sm font-medium text-ink-600 transition hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800;
+  }
+  .nav-item-active {
+    @apply bg-brand-soft font-bold text-brand dark:bg-brand/15 dark:text-blue-300;
+  }
   /* The eyebrow above a page title. */
   .eyebrow {
-    @apply inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-brand;
+    @apply inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-ink-500;
   }
 }
 

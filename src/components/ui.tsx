@@ -134,7 +134,7 @@ export function Modal({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          'card animate-rise flex max-h-[92vh] w-full flex-col overflow-hidden rounded-b-none shadow-lift sm:rounded-3xl',
+          'panel animate-rise flex max-h-[92vh] w-full flex-col overflow-hidden rounded-b-none shadow-lift sm:rounded-[24px]',
           wide ? 'sm:max-w-2xl' : 'sm:max-w-md',
         )}
         onMouseDown={(e) => e.stopPropagation()}

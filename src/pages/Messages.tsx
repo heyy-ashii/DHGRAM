@@ -55,16 +55,16 @@ function ThreadView({ id, onBack }: { id: string; onBack: () => void }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex items-center gap-3 border-b border-ink-200 p-4 dark:border-ink-800">
-        <button className="btn-ghost p-2 md:hidden" onClick={onBack} aria-label="Back to conversations"><ArrowLeft className="size-4" /></button>
-        {data?.conversation.peer && <Avatar user={data.conversation.peer} size="sm" />}
+      <header className="flex h-24 shrink-0 items-center gap-3 border-b border-ink-200 bg-white px-7 dark:border-ink-800 dark:bg-ink-900">
+        <button className="grid size-11 place-items-center rounded-[10px] text-ink-500 hover:bg-ink-100 md:hidden dark:hover:bg-ink-800" onClick={onBack} aria-label="Back to conversations"><ArrowLeft className="size-5" /></button>
+        {data?.conversation.peer && <Avatar user={data.conversation.peer} size="md" />}
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{data?.conversation.peer?.name ?? 'Conversation'}</p>
+          <p className="truncate text-[15px] font-semibold">{data?.conversation.peer?.name ?? 'Conversation'}</p>
           {data?.conversation.peer?.username && <p className="truncate text-xs text-ink-500">@{data.conversation.peer.username}</p>}
         </div>
         <div className="relative">
-          <button className="btn-ghost p-2" onClick={() => setMenu((m) => !m)} aria-label="Conversation options">
-            <MoreVertical className="size-4" />
+          <button className="grid size-11 place-items-center rounded-[10px] text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800" onClick={() => setMenu((m) => !m)} aria-label="Conversation options">
+            <MoreVertical className="size-5" />
           </button>
           {menu && (
             <>
@@ -82,17 +82,19 @@ function ThreadView({ id, onBack }: { id: string; onBack: () => void }) {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto bg-ink-50 p-4 dark:bg-ink-900/40">
+      <div className="flex-1 overflow-y-auto bg-ink-50 px-5 py-6 dark:bg-ink-950/40">
         {isLoading ? (
           <div className="grid h-full place-items-center"><Spinner /></div>
         ) : messages.length === 0 ? (
           <p className="mt-8 text-center text-sm text-ink-500">Say hello to start the conversation.</p>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-5">
             {messages.map((m) => (
-              <div key={m._id} className={cn('max-w-[80%] rounded-2xl px-3.5 py-2 text-sm', m.mine ? 'self-end rounded-br-sm bg-brand text-white' : 'self-start rounded-bl-sm bg-white shadow-sm dark:bg-ink-800')}>
-                <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                <p className={cn('mt-1 text-[10px]', m.mine ? 'text-blue-100' : 'text-ink-400')}>{formatTime(m.createdAt)}</p>
+              <div key={m._id} className={cn('flex max-w-[78%] flex-col gap-1', m.mine ? 'self-end items-end' : 'self-start items-start')}>
+                <div className={cn('rounded-[16px] px-3.5 py-2.5 text-[14px] leading-[21px]', m.mine ? 'rounded-br-[4px] bg-brand text-white' : 'rounded-bl-[4px] bg-white text-ink-900 ring-1 ring-ink-200 dark:bg-ink-800 dark:text-ink-100 dark:ring-ink-700')}>
+                  <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                </div>
+                <p className="px-1 text-[10px] text-ink-400">{formatTime(m.createdAt)}</p>
               </div>
             ))}
             <div ref={end} />
@@ -100,10 +102,10 @@ function ThreadView({ id, onBack }: { id: string; onBack: () => void }) {
         )}
       </div>
 
-      <form onSubmit={onSubmit} className="flex gap-2 border-t border-ink-200 p-3 dark:border-ink-800">
-        <input className="input" placeholder="Type a message…" value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} aria-label="Message" />
-        <button type="submit" className="btn-primary px-3" disabled={send.isPending || !text.trim()} aria-label="Send">
-          {send.isPending ? <Spinner className="size-4" /> : <Send className="size-4" />}
+      <form onSubmit={onSubmit} className="flex shrink-0 items-center gap-2.5 border-t border-ink-200 bg-white p-6 dark:border-ink-800 dark:bg-ink-900">
+        <input className="input flex-1" placeholder="Type a message…" value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} aria-label="Message" />
+        <button type="submit" className="btn-primary size-12 shrink-0 px-0" disabled={send.isPending || !text.trim()} aria-label="Send">
+          {send.isPending ? <Spinner className="size-5" /> : <Send className="size-5" />}
         </button>
       </form>
 
@@ -219,16 +221,8 @@ export default function Messages() {
   if (isAdmin) {
     return (
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-0 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4">
-          <div className="flex items-center justify-between gap-3 px-4 pb-3 sm:px-0">
-            <div>
-              <h1 className="text-2xl font-extrabold">Messages</h1>
-              <p className="mt-1 text-sm text-ink-500">Reply to students who message the admin team.</p>
-            </div>
-          </div>
-          <div className="card grid min-h-0 flex-1 overflow-hidden sm:rounded-2xl md:grid-cols-[340px_1fr]">
-            <SupportInbox selected={selected} onSelect={setSelected} onBack={() => setSelected(null)} />
-          </div>
+        <div className="card mx-5 my-5 flex min-h-0 flex-1 overflow-hidden md:mx-10 md:my-8 md:grid md:grid-cols-[320px_1fr]">
+          <SupportInbox selected={selected} onSelect={setSelected} onBack={() => setSelected(null)} />
         </div>
       </div>
     )
@@ -236,35 +230,28 @@ export default function Messages() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-0 pb-3 pt-3 sm:px-4 sm:pb-4 sm:pt-4">
-        <div className="flex items-center justify-between gap-3 px-4 pb-3 sm:px-0">
-          <div>
-            <h1 className="text-2xl font-extrabold">Messages</h1>
-            <p className="mt-1 text-sm text-ink-500">Chat privately with other students.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="btn-outline px-3" onClick={() => setSelected(ADMIN_KEY)}>
-              <ShieldQuestion className="size-4" /> Support
-            </button>
-            <button className="btn-outline px-3" onClick={() => setGroupPicker(true)}>
-              <Users className="size-4" /> Group
-            </button>
-            <button className="btn-primary px-3" onClick={() => setPicker(true)}>
-              <MessageSquarePlus className="size-4" /> New
-            </button>
-          </div>
-        </div>
-
-        <div className="card grid min-h-0 flex-1 overflow-hidden sm:rounded-2xl md:grid-cols-[340px_1fr]">
-          <div className={cn('flex min-h-0 flex-col border-r border-ink-200 dark:border-ink-800', selected && 'hidden md:flex')}>
-          <div className="border-b border-ink-200 p-3 dark:border-ink-800">
-            <input className="input" placeholder="Search messages" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search messages" />
-            <div className="mt-2 flex gap-1">
+      <div className="card mx-5 my-5 flex min-h-0 flex-1 overflow-hidden md:mx-10 md:my-8 md:grid md:grid-cols-[320px_1fr]">
+        <div className={cn('flex min-h-0 flex-col bg-white md:border-r md:border-ink-200 dark:bg-ink-900 dark:md:border-ink-800', selected && 'hidden md:flex')}>
+          <div className="flex flex-col gap-[18px] p-5">
+            <h1 className="font-heading text-[28px] font-semibold leading-8 tracking-[-0.5px]">Messages</h1>
+            <div className="flex gap-2">
+              <button className="btn-primary flex-1" onClick={() => setPicker(true)}>
+                <MessageSquarePlus className="size-4" /> New message
+              </button>
+              <button className="btn-outline flex-1" onClick={() => setGroupPicker(true)}>
+                <Users className="size-4" /> New group
+              </button>
+            </div>
+            <input className="input" placeholder="Search name or username" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search messages" />
+            <div className="flex gap-2">
               {(['all', 'unread'] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
-                  className={cn('flex-1 rounded-lg py-1.5 text-xs font-semibold capitalize', tab === t ? 'bg-ink-900 text-white dark:bg-white dark:text-ink-900' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800')}
+                  className={cn(
+                    'flex-1 rounded-[10px] py-2.5 text-xs font-bold capitalize transition',
+                    tab === t ? 'bg-brand text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800',
+                  )}
                 >
                   {t}
                 </button>
@@ -343,8 +330,11 @@ export default function Messages() {
               })
             )}
           </div>
+          <p className="border-t border-ink-100 px-5 py-4 text-[11px] text-ink-400 dark:border-ink-800">
+            Messages are kept for 30 days.
+          </p>
         </div>
-        <div className={cn('min-h-0', !selected && 'hidden md:block')}>
+        <div className={cn('flex min-h-0 flex-col overflow-hidden bg-ink-50 dark:bg-ink-950/40', !selected && 'hidden md:block')}>
           {selected === ADMIN_KEY ? (
             <AdminChat onBack={() => setSelected(null)} />
           ) : selected?.startsWith(GROUP_PREFIX) ? (
@@ -360,7 +350,6 @@ export default function Messages() {
             </div>
           )}
           </div>
-        </div>
       </div>
 
       <NewChatPicker open={picker} onClose={() => setPicker(false)} onStarted={(id) => setSelected(id)} />
