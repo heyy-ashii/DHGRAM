@@ -94,6 +94,12 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
 - `server/routes/chat.js` + `server/models/Chat.js` (Conversation/Message) back the
   student↔admin support thread. Students use `GET/POST /chat/me*`; admins use
   `/chat/conversations*` (guarded by `restrictTo('admin')`).
+- The admin inbox also lists **every** student, not just those who wrote in:
+  `GET /admin/support/directory` (in `server/routes/admin.js`) mirrors the
+  student-facing `/messages/directory` and adds each row's conversation state,
+  and `POST /admin/support/conversations` opens a thread with a picked student.
+  `SupportInbox`'s "students" tab searches it (by name, username or registration
+  number) and can filter to students who have never messaged ("Never messaged").
 - The UI for it lives **only inside the Messages page**: `AdminChat` (student view)
   and `SupportInbox` (admin view) in `src/components/`. `Messages.tsx` branches on
   `isAdmin` to render the right side. Admins land on `/messages` after login, and

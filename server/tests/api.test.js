@@ -595,6 +595,43 @@ describe('admin', () => {
     expect((await admin.get('/api/v1/admin/users?q=managed')).body.data.users).toHaveLength(0);
     expect((await admin.delete(`/api/v1/admin/users/${meId}`)).status).toBe(400);
   });
+
+  it('lists every student in the support inbox, not just existing conversations', async () => {
+    expect((await request(app).get('/api/v1/admin/support/directory')).status).toBe(401);
+    const { agent: user } = await login('plainuser', 'plainpass1');
+    expect((await user.get('/api/v1/admin/support/directory')).status).toBe(403);
+
+    const { agent: admin } = await login('admin', 'adminpass1');
+    const all = await admin.get('/api/v1/admin/support/directory?limit=100');
+    expect(all.status).toBe(200);
+    // "plainuser" has never messaged support, yet appears in the list.
+    const plain = all.body.data.students.find((s) => s.username === 'plainuser');
+    expect(plain).toMatchObject({ conversationId: null, lastMessage: '', unreadForAdmin: 0 });
+    // Admins are not students, so they are not in the support directory.
+    expect(all.body.data.students.some((s) => s.username === 'admin')).toBe(false);
+
+    // Searching by name, username or registration number narrows the directory.
+    const byName = await admin.get('/api/v1/admin/support/directory?q=new.student');
+    expect(byName.body.data.students.map((s) => s.username)).toContain('new.student');
+    const byReg = await admin.get('/api/v1/admin/support/directory?q=250001');
+    expect(byReg.body.data.students.map((s) => s.username)).toContain('new.student');
+
+    // Opening a thread with someone who never wrote in creates one, and the row
+    // then carries its conversation id.
+    const started = await admin.post('/api/v1/admin/support/conversations').send({ userId: plain._id });
+    expect(started.status).toBe(201);
+    expect(started.body.data.conversation.user.username).toBe('plainuser');
+    const again = await admin.get('/api/v1/admin/support/directory?q=plainuser');
+    expect(again.body.data.students[0].conversationId).toBe(started.body.data.conversation._id);
+
+    // `unanswered=true` drops students who now have a thread.
+    const unanswered = await admin.get('/api/v1/admin/support/directory?unanswered=true&limit=100');
+    expect(unanswered.body.data.students.some((s) => s.username === 'plainuser')).toBe(false);
+
+    // A non-student target is rejected.
+    const meId = (await admin.get('/api/v1/auth/me')).body.data.user._id;
+    expect((await admin.post('/api/v1/admin/support/conversations').send({ userId: meId })).status).toBe(404);
+  });
 });
 
 describe('reports and moderation', () => {

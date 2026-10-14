@@ -28,7 +28,7 @@ Legacy `/discover`, `/programs/:id`, `/search` and `/admin/*` redirect to `/feed
 | Posts | `GET /posts` (optionally `?author=<id>`), signed-in: `POST /posts`, `PATCH /posts/:id`, `DELETE /posts/:id`, `POST /posts/:id/like` |
 | Stories | `GET /stories`, signed-in: `GET /stories/mine`, `POST /stories`, `DELETE /stories/:id`, `POST /stories/:id/view`, `GET /stories/:id/viewers` |
 | Messages | signed-in: `GET /messages`, `GET /messages/directory`, `POST /messages/start`, `GET /messages/:id`, `POST /messages/:id`, `GET /messages/unread` |
-| Support chat | user: `GET /chat/me`, `GET /chat/me/unread`, `POST /chat/me/messages`; admin: `GET /chat/conversations`, `GET/POST /chat/conversations/:id/messages`, `PATCH /chat/conversations/:id` |
+| Support chat | user: `GET /chat/me`, `GET /chat/me/unread`, `POST /chat/me/messages`; admin: `GET /chat/conversations`, `GET/POST /chat/conversations/:id/messages`, `PATCH /chat/conversations/:id`, `GET /admin/support/directory`, `POST /admin/support/conversations` |
 
 ## Features
 
@@ -38,7 +38,7 @@ Legacy `/discover`, `/programs/:id`, `/search` and `/admin/*` redirect to `/feed
 - **About:** `/about` is a public page describing how DHGRAM works; the same content is available from the profile's three-dot menu.
 - **Messages:** signed-in students see **all other students** in the Messages sidebar (not just existing conversations) and start a one-to-one chat from there. The page is full-screen. Messages refresh by polling.
 - **30-day retention:** messages older than `CHAT_RETENTION_DAYS` (30 by default) are deleted when a thread is read and by the daily cleanup cron.
-- **Chat with Admin:** lives inside Messages. Students open the **Support** conversation (sidebar or header button) to message the admin team; admins land on the support inbox in Messages and can reply or mark conversations resolved. There is no separate admin dashboard.
+- **Chat with Admin:** lives inside Messages. Students open the **Support** conversation (sidebar or header button) to message the admin team; admins land on the support inbox in Messages and can reply or mark conversations resolved. The inbox has a **students** tab that lists every student (searchable by name, username or registration number), so an admin can start a conversation with anyone, not only students who already wrote in. There is no separate admin dashboard.
 - **No sign-up, login only:** every student on the official roster already has an account. Sign in on `/login` with your **username or registration number** plus your password; a first-time login is provisioned from the roster row on the spot. The username is built from the roster name and the default password is the registration number followed by the admission number (e.g. `2500013411`). There is no email step.
 - **Forgot password:** reset by emailed code.
 
