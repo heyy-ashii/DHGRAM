@@ -3,7 +3,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 process.env.NODE_ENV = 'test';
-process.env.ROSTER_CSV = 'AD.NO,REG. NO,NAME,PHONE,EMAIL\n3411,250001,New Student,,\n3412,250002,Second Student,,\n9999,250009,Lock User,,\n';
+process.env.ROSTER_CSV = 'AD.NO,REG. NO,NAME,PHONE,EMAIL\n3411,250001,New Student,,\n3412,250002,Second Student,,\n';
 // This suite runs on the in-memory MongoDB. Blank the other datastore settings
 // that .env may carry so tests never reach a hosted database. Empty strings are
 // used deliberately: dotenv does not override keys that already exist.
@@ -40,45 +40,31 @@ const login = async (identifier, password) => {
 };
 
 describe('auth', () => {
-  it('creates an account for a student on the roster from just the registration number', async () => {
-    const agent = request.agent(app);
-    const ok = await agent.post('/api/v1/auth/signup').send({ regNo: '250001' });
-    expect(ok.status).toBe(201);
-    expect(ok.body.data.user.username).toBe('new.student');
-    expect(ok.body.data.user.name).toBe('New Student');
-    expect(ok.body.data.user.role).toBe('user');
-    expect(ok.body.data.user).not.toHaveProperty('password');
-    expect(ok.headers['set-cookie'][0]).toMatch(/HttpOnly/);
+  it('provisions an account on first login for a student on the roster', async () => {
+    // There is no signup: the account is created the first time the student logs
+    // in with the roster-derived username and the default password.
+    const { agent, res } = await login('new.student', '2500013411');
+    expect(res.status).toBe(200);
+    expect(res.body.data.user.username).toBe('new.student');
+    expect(res.body.data.user.name).toBe('New Student');
+    expect(res.body.data.user.role).toBe('user');
+    expect(res.body.data.user).not.toHaveProperty('password');
+    expect(res.headers['set-cookie'][0]).toMatch(/HttpOnly/);
 
     const me = await agent.get('/api/v1/auth/me');
     expect(me.body.data.user.username).toBe('new.student');
-
-    // The registration + admission number is the initial password.
-    expect((await login('new.student', '2500013411')).res.status).toBe(200);
-
-    // A repeated signup for the same registration number does not collide: the
-    // username is suffixed so the second student sharing a name can register.
-    const again = await request(app).post('/api/v1/auth/signup').send({ regNo: '250001' });
-    expect(again.status).toBe(201);
-    expect(again.body.data.user.username).toBe('new.student.2');
   });
 
-  it('rejects a registration number that is not on the roster', async () => {
-    const badReg = await request(app).post('/api/v1/auth/signup').send({ regNo: '1234' });
-    expect(badReg.status).toBe(403);
-    expect((await request(app).post('/api/v1/auth/signup').send({})).status).toBe(400);
+  it('does not sign up via the removed endpoint, and rejects a wrong default password', async () => {
+    // The signup endpoint is gone.
+    const gone = await request(app).post('/api/v1/auth/signup').send({ regNo: '250002' });
+    expect(gone.status).toBe(404);
+    // A roster username with the wrong password is still just a failed login.
+    expect((await login('second.student', 'nope-nope')).res.status).toBe(401);
   });
 
-  it('uses a password chosen at signup when one is supplied', async () => {
-    const ok = await request(app)
-      .post('/api/v1/auth/signup')
-      .send({ regNo: '250002', password: 'chosen-pass-123' });
-    expect(ok.status).toBe(201);
-    expect((await login('second.student', 'chosen-pass-123')).res.status).toBe(200);
-    expect((await login('second.student', '2500023412')).res.status).toBe(401);
-
-    const short = await request(app).post('/api/v1/auth/signup').send({ regNo: '250002', password: 'short' });
-    expect(short.status).toBe(400);
+  it('rejects a username that is not on the roster', async () => {
+    expect((await login('nobody.at.all', '2500013411')).res.status).toBe(401);
   });
 
   it('rejects bad credentials and locks after repeated failures', async () => {

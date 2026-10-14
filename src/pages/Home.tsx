@@ -30,7 +30,7 @@ export default function Home() {
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link to="/login" className="btn-primary px-5 py-3">Log in</Link>
-            <Link to="/signup" className="btn-outline px-5 py-3">Create account</Link>
+            <Link to="/feed" className="btn-outline px-5 py-3">Browse thoughts</Link>
           </div>
         </section>
       )}

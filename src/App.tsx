@@ -63,7 +63,7 @@ export default function App() {
           <Route path="programs/:id" element={<Navigate to="/feed" replace />} />
           <Route path="search" element={<Navigate to="/feed" replace />} />
           <Route path="login" element={<Login />} />
-          <Route path="signup" element={<Login initialMode="signup" />} />
+          <Route path="signup" element={<Navigate to="/login" replace />} />
           <Route
             path="account"
             element={

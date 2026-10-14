@@ -8,8 +8,9 @@ import { loginLimiter, otpLimiter } from '../middleware/rateLimit.js';
 import { email, name, password, username, validate } from '../middleware/validate.js';
 import { Otp } from '../models/Otp.js';
 import { User } from '../models/User.js';
-import { findStudentByRegNo, initialPassword, usernameFromName } from '../roster.js';
+import { findStudentByUsername } from '../roster.js';
 import { AppError, asyncHandler } from '../utils/AppError.js';
+import { createStudentAccount } from '../utils/accounts.js';
 import { sendOtpEmail } from '../utils/email.js';
 import { isSuspended, liftIfExpired } from '../utils/suspension.js';
 import { clearAuth, sendAuth } from '../utils/tokens.js';
@@ -62,50 +63,6 @@ async function consumeOtp(emailAddress, purpose, code) {
 }
 
 const otpCode = z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code');
-const regNo = z.string().trim().min(1, 'Enter your registration number').max(16);
-const signupPassword = z.string().min(8, 'Password must be at least 8 characters').max(128);
-
-// The student list is the allow-list for account creation: a person may sign up
-// with just the registration number that appears on the list. Students do not
-// reliably know their exact name spelling (case, spacing) as it is written on the
-// sheet, so the name is NOT asked for or checked - the registration number alone
-// identifies the row. The username is derived from the roster name. The student
-// chooses their own password at signup; when omitted it falls back to the roster
-// default (registration number followed by the admission number).
-router.post(
-  '/signup',
-  loginLimiter,
-  validate(z.object({ regNo, password: signupPassword.optional() })),
-  asyncHandler(async (req, res) => {
-    const student = await findStudentByRegNo(req.body.regNo);
-    if (!student) {
-      throw new AppError('That registration number is not on the student list. Check it, or contact the admin.', 403);
-    }
-    let username = usernameFromName(student.name);
-    if (username.length < 3) {
-      throw new AppError('We could not build a username for that registration number. Please contact the admin.', 422);
-    }
-    // Two students can share a name (and therefore a derived username), so append
-    // a numeric suffix until the username is free.
-    if (await User.exists({ username })) {
-      const base = username.replace(/\.\d+$/, '').slice(0, 27).replace(/^\.+|\.+$/g, '');
-      let n = 2;
-      while (await User.exists({ username })) {
-        username = `${base}.${n}`;
-        n += 1;
-      }
-    }
-    const user = await User.create({
-      name: student.name,
-      username,
-      password: req.body.password ?? initialPassword(student),
-      role: 'user',
-      emailVerified: true,
-      lastLoginAt: new Date(),
-    });
-    sendAuth(res, user, 201);
-  }),
-);
 
 router.post(
   '/login',
@@ -118,9 +75,16 @@ router.post(
     if (!identifier || !pwd) throw new AppError('Please provide username/email and password', 400);
 
     const query = identifier.includes('@') ? { email: identifier } : { username: identifier };
-    const user = await User.findOne(query).select('+password +failedLoginAttempts +lockUntil');
+    let user = await User.findOne(query).select('+password +failedLoginAttempts +lockUntil');
     if (user?.lockUntil && user.lockUntil > new Date()) {
       throw new AppError('Account temporarily locked after too many failed attempts. Try again later.', 423);
+    }
+    // Accounts are not created by hand: every student on the roster already has
+    // one. If a roster student has not logged in before, their account is
+    // provisioned here, on first login, with the default password.
+    if (!user && !identifier.includes('@')) {
+      const student = await findStudentByUsername(identifier);
+      if (student) user = await createStudentAccount(student);
     }
     if (!user || !(await user.checkPassword(pwd))) {
       if (user) {

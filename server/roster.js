@@ -56,6 +56,15 @@ export async function findStudentByRegNo(regNo) {
   return rows.find((r) => normRegNo(r.regNo) === wantRegNo) ?? null;
 }
 
+// The username is derived from the roster name, so the reverse lookup finds the
+// roster row a username belongs to. Used to provision an account on first login.
+export async function findStudentByUsername(username) {
+  const want = String(username ?? '').trim().toLowerCase();
+  if (!want) return null;
+  const rows = await loadRoster();
+  return rows.find((r) => usernameFromName(r.name) === want) ?? null;
+}
+
 // Backwards-compatible name + registration lookup, kept for callers/tests that
 // still pass a name.
 export async function findStudent(name, regNo) {
