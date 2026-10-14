@@ -5,9 +5,9 @@ import Avatar from './Avatar'
 import { ConfirmModal, Modal, Spinner } from './ui'
 import { useUi } from '../context/UiContext'
 import { api, errorMessage } from '../lib/api'
-import type { GroupSummary, PeerUser } from '../lib/types'
+import type { DirectoryUser, GroupSummary, PeerUser } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
-import { useGroup, useStudentDirectory } from '../lib/queries'
+import { directoryUsers, useGroup, useStudentDirectory } from '../lib/queries'
 import { cn, formatTime } from '../lib/utils'
 
 // A group avatar: a stack of up to three member faces, falling back to a Users
@@ -66,7 +66,7 @@ function GroupMembersModal({ open, onClose, group, onLeft, onDeleted }: {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['groups'] })
   const candidates = useMemo(
-    () => (data?.data.users ?? []).filter((u) => !group.members.some((m) => m._id === u._id)),
+    () => directoryUsers(data).filter((u): u is DirectoryUser & { _id: string } => Boolean(u._id) && !group.members.some((m) => m._id === u._id)),
     [data, group.members],
   )
 
@@ -293,7 +293,7 @@ export function NewGroupModal({ open, onClose, onCreated }: { open: boolean; onC
   const { data, isLoading } = useStudentDirectory(q, open)
 
   const candidates = useMemo(
-    () => (data?.data.users ?? []).filter((u) => u._id !== user?._id),
+    () => directoryUsers(data).filter((u): u is DirectoryUser & { _id: string } => Boolean(u._id) && u._id !== user?._id),
     [data, user?._id],
   )
 

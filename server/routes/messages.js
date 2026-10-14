@@ -6,6 +6,7 @@ import { chatLimiter } from '../middleware/rateLimit.js';
 import { objectId, validate } from '../middleware/validate.js';
 import { PeerConversation, PeerMessage, isParticipant, pairFor, sideFor, unreadFor } from '../models/PeerChat.js';
 import { User } from '../models/User.js';
+import { loadRoster, normRegNo, usernameFromName } from '../roster.js';
 import { AppError, asyncHandler } from '../utils/AppError.js';
 
 // Student-to-student direct messages: list threads, start one, read and send.
@@ -77,12 +78,61 @@ router.get(
   }),
 );
 
-// Everyone a student can start a chat with: active accounts, minus themselves.
+// Everyone a student can see in Messages: every roster student, plus any account
+// that is not on the roster (the admin, hand-made accounts). A student is marked
+// `joined` once they have signed in at least once; a roster student who has never
+// signed in still appears, so the whole class is visible from the start.
+// Accounts are matched to roster rows by registration number first, then by the
+// username derived from the roster name, so a student appears exactly once.
 const directoryQuery = z.object({
   q: z.string().trim().max(100).optional(),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
 });
+
+const shapeDirectoryUser = (u) => ({
+  _id: u._id ?? null,
+  name: u.name ?? '',
+  username: u.username ?? '',
+  avatar: u.avatar ?? null,
+  joined: Boolean(u.joined),
+});
+
+async function directoryEntries(me) {
+  const accounts = await User.find({}).lean();
+  const roster = await loadRoster();
+  const meId = String(me);
+  const meAccount = accounts.find((a) => String(a._id) === meId);
+  const meReg = meAccount?.regNo ? normRegNo(meAccount.regNo) : null;
+  const meUsername = meAccount?.username ? String(meAccount.username).toLowerCase() : null;
+
+  const byReg = new Map();
+  const byUsername = new Map();
+  for (const account of accounts) {
+    if (account.regNo) byReg.set(normRegNo(account.regNo), account);
+    if (account.username) byUsername.set(String(account.username).toLowerCase(), account);
+  }
+
+  const used = new Set();
+  const entries = [];
+  for (const student of roster) {
+    const account = byReg.get(normRegNo(student.regNo)) ?? byUsername.get(usernameFromName(student.name));
+    if (account) {
+      used.add(String(account._id));
+      if (String(account._id) === meId) continue;
+      entries.push(shapeDirectoryUser({ ...account, joined: Boolean(account.lastLoginAt) }));
+    } else if (normRegNo(student.regNo) !== meReg && usernameFromName(student.name) !== meUsername) {
+      entries.push(shapeDirectoryUser({ _id: null, name: student.name, username: '', avatar: null, joined: false }));
+    }
+  }
+
+  // Accounts that are not on the roster (the admin, hand-made accounts) stay visible.
+  for (const account of accounts) {
+    if (used.has(String(account._id)) || String(account._id) === meId) continue;
+    entries.push(shapeDirectoryUser({ ...account, joined: Boolean(account.lastLoginAt) }));
+  }
+  return entries;
+}
 
 router.get(
   '/directory',
@@ -90,28 +140,22 @@ router.get(
   asyncHandler(async (req, res) => {
     const me = req.user._id;
     const { q, page, limit } = req.validated.query;
-    const filter = { status: 'active', _id: { $ne: me } };
+    let entries = await directoryEntries(me);
     if (q) {
-      const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const rx = new RegExp(escaped, 'i');
-      filter.$or = [{ name: rx }, { username: rx }];
+      const term = q.toLowerCase();
+      entries = entries.filter((u) => u.name.toLowerCase().includes(term) || u.username.toLowerCase().includes(term));
     }
-    const [users, total] = await Promise.all([
-      User.find(filter)
-        .sort({ name: 1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean(),
-      User.countDocuments(filter),
-    ]);
+    entries.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    const total = entries.length;
+    const start = (page - 1) * limit;
     res.set('Cache-Control', 'no-store');
     res.json({
       status: 'success',
-      results: users.length,
+      results: entries.slice(start, start + limit).length,
       total,
       page,
       pages: Math.max(1, Math.ceil(total / limit)),
-      data: { users: users.map((u) => ({ _id: u._id, name: u.name ?? '', username: u.username ?? '', avatar: u.avatar ?? null })) },
+      data: { users: entries.slice(start, start + limit) },
     });
   }),
 );
