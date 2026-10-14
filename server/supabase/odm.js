@@ -61,6 +61,51 @@ function insertSql(table, columns) {
   };
 }
 
+// The columns a table actually has, cached per process. Migrations are applied
+// out of band, so a deployed database can lag the code (e.g. a newer column like
+// app_users.reg_no). Writing to a column that does not exist would fail the whole
+// request, so writes drop any unknown column instead: nothing that could have
+// been stored is lost, and the app keeps working until the migration is applied.
+const columnCache = new Map();
+
+async function knownColumns(table) {
+  if (!columnCache.has(table)) {
+    const { rows } = await query(
+      'select column_name from information_schema.columns where table_schema = current_schema() and table_name = $1',
+      [table],
+    );
+    columnCache.set(table, new Set(rows.map((r) => r.column_name)));
+  }
+  return columnCache.get(table);
+}
+
+// Map a document to column names, dropping any the table does not have (see above).
+async function writeColumns(table, spec, doc) {
+  const known = await knownColumns(table);
+  const columns = toColumns(spec, doc);
+  for (const key of Object.keys(columns)) {
+    if (!known.has(key)) delete columns[key];
+  }
+  return columns;
+}
+
+function isMissingColumnError(err) {
+  return err?.code === '42703' || /column .* does not exist/i.test(String(err?.message ?? ''));
+}
+
+// Run a write with the document mapped to existing columns only. If the write
+// still hits a missing column (the cached schema was stale because a migration
+// ran while this process was warm), re-read the schema and try once more.
+async function write(table, spec, doc, run) {
+  try {
+    return await run(await writeColumns(table, spec, doc));
+  } catch (err) {
+    if (!isMissingColumnError(err)) throw err;
+    columnCache.delete(table);
+    return run(await writeColumns(table, spec, doc));
+  }
+}
+
 export function createCollection(spec) {
   const { table } = spec;
   const map = spec.columns;
@@ -83,14 +128,15 @@ export function createCollection(spec) {
         patch.password = await bcrypt.hash(String(patch.password), 12);
         patch.passwordChangedAt = new Date(Date.now() - 1000);
       }
-      const columns = toColumns(spec, patch);
-      if (!Object.keys(columns).length) return self;
-      const keys = Object.keys(columns);
-      const assignments = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
-      const { rows } = await query(
-        `update ${table} set ${assignments} where id = $${keys.length + 1} returning *`,
-        [...keys.map((k) => columns[k]), self._id],
-      );
+      const rows = await write(table, spec, patch, async (columns) => {
+        const keys = Object.keys(columns);
+        if (!keys.length) return [];
+        const assignments = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+        return (await query(
+          `update ${table} set ${assignments} where id = $${keys.length + 1} returning *`,
+          [...keys.map((k) => columns[k]), self._id],
+        )).rows;
+      });
       if (rows[0]) state.data = fromRow(spec, rows[0]);
       state.dirty = {};
       return self;
@@ -161,26 +207,28 @@ export function createCollection(spec) {
     const where = buildWhere(query_, map);
     const existing = await selectWhere(where, { single: true });
     if (existing) {
-      const columns = toColumns(spec, update);
-      const keys = Object.keys(columns);
-      if (!keys.length) return makeDoc(existing);
-      const assignments = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
-      const { rows } = await query(
-        `update ${table} set ${assignments} where id = $${keys.length + 1} returning *`,
-        [...keys.map((k) => columns[k]), existing.id],
-      );
+      const rows = await write(table, spec, update, async (columns) => {
+        const keys = Object.keys(columns);
+        if (!keys.length) return [existing];
+        const assignments = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+        return (await query(
+          `update ${table} set ${assignments} where id = $${keys.length + 1} returning *`,
+          [...keys.map((k) => columns[k]), existing.id],
+        )).rows;
+      });
       return makeDoc(rows[0]);
     }
-    const merged = toColumns(spec, { ...query_, ...update });
-    const keys = Object.keys(merged);
-    const placeholders = keys.map((_, i) => `$${i + 1}`);
     const conflict = spec.upsertOn?.length
       ? `on conflict (${spec.upsertOn.join(', ')}) do update set updated_at = now()`
       : '';
-    const { rows } = await query(
-      `insert into ${table} (${keys.join(', ')}) values (${placeholders.join(', ')}) ${conflict} returning *`,
-      keys.map((k) => merged[k]),
-    );
+    const rows = await write(table, spec, { ...query_, ...update }, async (columns) => {
+      const keys = Object.keys(columns);
+      const placeholders = keys.map((_, i) => `$${i + 1}`);
+      return (await query(
+        `insert into ${table} (${keys.join(', ')}) values (${placeholders.join(', ')}) ${conflict} returning *`,
+        keys.map((k) => columns[k]),
+      )).rows;
+    });
     return makeDoc(rows[0]);
   }
 
@@ -191,10 +239,11 @@ export function createCollection(spec) {
     fromRow: (row) => fromRow(spec, row),
     makeDoc,
     create: async (doc) => {
-      const columns = toColumns(spec, { ...doc });
-      if (spec.hashesPassword && columns.password) columns.password = await bcrypt.hash(String(columns.password), 12);
-      const insert = insertSql(table, columns);
-      const { rows } = await query(insert.text, insert.values);
+      const rows = await write(table, spec, doc, async (columns) => {
+        if (spec.hashesPassword && columns.password) columns.password = await bcrypt.hash(String(columns.password), 12);
+        const insert = insertSql(table, columns);
+        return (await query(insert.text, insert.values)).rows;
+      });
       return makeDoc(rows[0]);
     },
     insertMany: async (docs) => {
@@ -225,18 +274,24 @@ export function createCollection(spec) {
       }, true),
     findByIdAndUpdate: async (id, update, opts = {}) => {
       if (!isUuid(id)) return null;
-      const columns = toColumns(spec, update);
-      if (spec.hashesPassword && columns.password) columns.password = await bcrypt.hash(String(columns.password), 12);
-      const keys = Object.keys(columns);
-      if (!keys.length) return makeDoc(await selectWhere(new Where().eq('id', id), { single: true }));
-      const assignments = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
-      const { rows } = await query(
-        `update ${table} set ${assignments} where id = $${keys.length + 1} returning *`,
-        [...keys.map((k) => columns[k]), id],
-      );
+      const rows = await write(table, spec, update, async (columns) => {
+        if (spec.hashesPassword && columns.password) columns.password = await bcrypt.hash(String(columns.password), 12);
+        const keys = Object.keys(columns);
+        if (!keys.length) {
+          const existing = await selectWhere(new Where().eq('id', id), { single: true });
+          return existing ? [existing] : [];
+        }
+        const assignments = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+        return (await query(
+          `update ${table} set ${assignments} where id = $${keys.length + 1} returning *`,
+          [...keys.map((k) => columns[k]), id],
+        )).rows;
+      });
       if (rows[0]) return makeDoc(rows[0]);
       if (!opts.upsert) return null;
-      const insert = insertSql(table, { id, ...columns });
+      const inserted = await writeColumns(table, spec, update);
+      if (spec.hashesPassword && inserted.password) inserted.password = await bcrypt.hash(String(inserted.password), 12);
+      const insert = insertSql(table, { id, ...inserted });
       return makeDoc((await query(insert.text, insert.values)).rows[0]);
     },
     findByIdAndDelete: async (id) => {
@@ -267,16 +322,17 @@ export function createCollection(spec) {
     },
     updateMany: async (filter = {}, update = {}) => {
       const where = buildWhere(filter, map);
-      const columns = toColumns(spec, update.$set || update);
-      const keys = Object.keys(columns);
-      if (!keys.length) return 0;
       const offset = where.params.length;
-      const assignments = keys.map((k, i) => `${k} = $${offset + i + 1}`).join(', ');
-      const { rowCount } = await query(
-        `update ${table} set ${assignments} where ${where.toString()}`,
-        [...where.params, ...keys.map((k) => columns[k])],
-      );
-      return rowCount ?? 0;
+      return write(table, spec, update.$set || update, async (columns) => {
+        const keys = Object.keys(columns);
+        if (!keys.length) return 0;
+        const assignments = keys.map((k, i) => `${k} = $${offset + i + 1}`).join(', ');
+        const { rowCount } = await query(
+          `update ${table} set ${assignments} where ${where.toString()}`,
+          [...where.params, ...keys.map((k) => columns[k])],
+        );
+        return rowCount ?? 0;
+      });
     },
     deleteMany: async (filter = {}) => {
       const where = buildWhere(filter, map);

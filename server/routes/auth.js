@@ -8,7 +8,7 @@ import { loginLimiter, otpLimiter } from '../middleware/rateLimit.js';
 import { email, name, password, username, validate } from '../middleware/validate.js';
 import { Otp } from '../models/Otp.js';
 import { User } from '../models/User.js';
-import { findStudentByIdentifier, findStudentByUsername } from '../roster.js';
+import { findStudentByIdentifier, findStudentByUsername, usernameFromName } from '../roster.js';
 import { AppError, asyncHandler } from '../utils/AppError.js';
 import { createStudentAccount, ensureRegNo } from '../utils/accounts.js';
 import { sendOtpEmail } from '../utils/email.js';
@@ -64,6 +64,35 @@ async function consumeOtp(emailAddress, purpose, code) {
 
 const otpCode = z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code');
 
+// Find the account an identifier refers to. A student signs in with either their
+// username or their registration number, but an older database may not have the
+// registration-number column yet (migration 0007_user_reg_no). Look up the
+// username on its own first so a missing column degrades to username-only login
+// instead of failing the whole request.
+function isMissingColumn(err) {
+  return err?.code === '42703' || /column .* does not exist/i.test(String(err?.message ?? ''));
+}
+
+async function lookupByIdentifier(identifier) {
+  const fields = '+password +failedLoginAttempts +lockUntil';
+  if (identifier.includes('@')) return User.findOne({ email: identifier }).select(fields);
+  const byUsername = await User.findOne({ username: identifier }).select(fields);
+  if (byUsername) return byUsername;
+  try {
+    return await User.findOne({ regNo: identifier }).select(fields);
+  } catch (err) {
+    if (!isMissingColumn(err)) throw err;
+    // The registration-number column is missing, so an all-digit identifier
+    // cannot be matched against it. Fall back to the username derived from the
+    // roster name, which is how the account was provisioned.
+    if (/^\d+$/.test(identifier)) {
+      const student = await findStudentByIdentifier(identifier);
+      if (student) return User.findOne({ username: usernameFromName(student.name) }).select(fields);
+    }
+    return null;
+  }
+}
+
 router.post(
   '/login',
   loginLimiter,
@@ -76,10 +105,7 @@ router.post(
 
     // Students sign in with their username or their registration number; the
     // number is stored on the account so this needs no roster round-trip.
-    const query = identifier.includes('@')
-      ? { email: identifier }
-      : { $or: [{ username: identifier }, { regNo: identifier }] };
-    let user = await User.findOne(query).select('+password +failedLoginAttempts +lockUntil');
+    let user = await lookupByIdentifier(identifier);
     if (user?.lockUntil && user.lockUntil > new Date()) {
       throw new AppError('Account temporarily locked after too many failed attempts. Try again later.', 423);
     }
