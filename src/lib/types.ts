@@ -6,6 +6,7 @@ export interface User {
   _id: string
   name: string
   username: string
+  regNo?: string | null
   email: string | null
   role: Role
   status: 'active' | 'disabled'

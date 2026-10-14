@@ -48,6 +48,24 @@ describe('findStudentByRegNo', () => {
   });
 });
 
+describe('findStudentByIdentifier', () => {
+  it('treats an all-digit identifier as a registration number', async () => {
+    const { findStudentByIdentifier } = await import('../roster.js');
+    const byReg = await findStudentByIdentifier('250006');
+    expect(byReg).toMatchObject({ name: 'Muhammed Sinan M', adNo: '689' });
+    // A leading "u" (as some sheets write it) is stripped.
+    expect(await findStudentByIdentifier('u250007')).toMatchObject({ adNo: '690' });
+    expect(await findStudentByIdentifier('250099')).toBeNull();
+  });
+
+  it('treats anything else as a username derived from the roster name', async () => {
+    const { findStudentByIdentifier } = await import('../roster.js');
+    expect(await findStudentByIdentifier('jiyad.cp')).toMatchObject({ regNo: '250001' });
+    expect(await findStudentByIdentifier('Jiyad CP')).toBeNull();
+    expect(await findStudentByIdentifier('')).toBeNull();
+  });
+});
+
 describe('initialPassword', () => {
   it('is the registration number followed by the admission number', async () => {
     const { initialPassword } = await import('../roster.js');

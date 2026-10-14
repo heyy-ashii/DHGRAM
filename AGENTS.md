@@ -176,12 +176,17 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
   password defaults to registration number + admission number (e.g. `2500013411`),
   and duplicate names take a numeric suffix (`name.2`).
 - It is called two ways: **lazily on first login** — if the identifier is an
-  unknown username, `findStudentByUsername` looks up the roster row
-  (`server/roster.js`) and creates the account on the spot — and **in bulk** by
-  `npm run seed:students` (`server/scripts/seed-students.js`), which is idempotent
-  and safe to re-run as the roster grows.
-- Login is username/email + password (`POST /auth/login`); password reset still
-  uses email OTP (`requestResetCode` / `resetPassword`).
+  unknown username or registration number, `findStudentByIdentifier` looks up the
+  roster row (`server/roster.js`) and creates the account on the spot — and **in
+  bulk** by `npm run seed:students` (`server/scripts/seed-students.js`), which is
+  idempotent and safe to re-run as the roster grows.
+- **Login is username *or* registration number + password** (`POST /auth/login`).
+  The number is cached on the user as `regNo` (column `reg_no`; slice `regNo` in
+  the Sheets tab) so no roster round-trip is needed, and a line like `250001` is
+  unambiguously a number (a username is never all-digits). Older accounts without
+  a stored number are backfilled the next time they sign in with their username.
+  Email stays as an alias; password reset still uses email OTP
+  (`requestResetCode` / `resetPassword`).
 
 ## UI & design system
 

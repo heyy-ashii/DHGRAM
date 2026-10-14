@@ -60,6 +60,13 @@ describeIfDb('DHGRAM on Supabase (Postgres)', () => {
     expect(bad.status).toBe(401);
   });
 
+  it('lets a student log in with their registration number instead of username', async () => {
+    const byReg = await request(app).post('/api/v1/auth/login').send({ identifier: '250001', password: '2500013411' });
+    expect(byReg.status).toBe(200);
+    expect(byReg.body.data.user.username).toBe('new.student');
+    expect(byReg.body.data.user.regNo).toBe('250001');
+  });
+
   it('rejects a username that is not on the roster', async () => {
     expect((await request(app).post('/api/v1/auth/login').send({ identifier: 'ghost.user', password: '2500013411' })).status).toBe(401);
   });
