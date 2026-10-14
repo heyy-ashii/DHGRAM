@@ -1,6 +1,6 @@
 # DHGRAM — Share & Message
 
-A chat and thought-sharing platform for students: a public **Thoughts** feed, one-to-one **Messages** between students, and a built-in **Chat with Admin** inside Messages. Sign-up is by name + registration number on the student roster.
+A chat and thought-sharing platform for students: a public **Thoughts** feed, one-to-one **Messages** between students, and a built-in **Chat with Admin** inside Messages. Accounts are provisioned from the student roster, so the app is login only.
 
 Created by **Ashique.Pilassery**.
 
@@ -15,7 +15,7 @@ Because the site and the API share one domain, there is no cross-site cookie/COR
 
 ## Routes
 
-**Public:** `/` (stories + Thoughts feed) · `/feed` (Thoughts) · `/messages` (one-to-one chat + support, signed-in) · `/profile` (own profile, signed-in) · `/u/:username` (any profile) · `/about` · `/contact` · `/login` · `/signup` · `/account` (signed-in users)
+**Public:** `/` (stories + Thoughts feed) · `/feed` (Thoughts) · `/messages` (one-to-one chat + support, signed-in) · `/profile` (own profile, signed-in) · `/u/:username` (any profile) · `/about` · `/contact` · `/login` · `/account` (signed-in users)
 
 Legacy `/discover`, `/programs/:id`, `/search` and `/admin/*` redirect to `/feed` or `/`.
 
@@ -24,7 +24,7 @@ Legacy `/discover`, `/programs/:id`, `/search` and `/admin/*` redirect to `/feed
 | Area | Endpoints |
 | --- | --- |
 | Health | `GET /health` |
-| Auth | `POST /auth/signup`, `POST /auth/login`, `POST /auth/logout`, `POST /auth/password/request-otp`, `POST /auth/password/reset`, `GET /auth/me`, `GET /auth/users/:username`, `PATCH /auth/update-me`, `PATCH /auth/update-password` |
+| Auth | `POST /auth/login`, `POST /auth/logout`, `POST /auth/password/request-otp`, `POST /auth/password/reset`, `GET /auth/me`, `GET /auth/users/:username`, `PATCH /auth/update-me`, `PATCH /auth/update-password` |
 | Posts | `GET /posts` (optionally `?author=<id>`), signed-in: `POST /posts`, `PATCH /posts/:id`, `DELETE /posts/:id`, `POST /posts/:id/like` |
 | Stories | `GET /stories`, signed-in: `GET /stories/mine`, `POST /stories`, `DELETE /stories/:id`, `POST /stories/:id/view`, `GET /stories/:id/viewers` |
 | Messages | signed-in: `GET /messages`, `GET /messages/directory`, `POST /messages/start`, `GET /messages/:id`, `POST /messages/:id`, `GET /messages/unread` |
@@ -39,7 +39,7 @@ Legacy `/discover`, `/programs/:id`, `/search` and `/admin/*` redirect to `/feed
 - **Messages:** signed-in students see **all other students** in the Messages sidebar (not just existing conversations) and start a one-to-one chat from there. The page is full-screen. Messages refresh by polling.
 - **30-day retention:** messages older than `CHAT_RETENTION_DAYS` (30 by default) are deleted when a thread is read and by the daily cleanup cron.
 - **Chat with Admin:** lives inside Messages. Students open the **Support** conversation (sidebar or header button) to message the admin team; admins land on the support inbox in Messages and can reply or mark conversations resolved. There is no separate admin dashboard.
-- **Create Account:** on `/login` or `/signup`. The student enters the name and registration number on the student list; a matching row creates an account whose username is built from the name and whose initial password is the registration number followed by the admission number (e.g. `2500013411`). There is no email step.
+- **No sign-up, login only:** every student on the official roster already has an account. Sign in on `/login` with your **username or registration number** plus your password; a first-time login is provisioned from the roster row on the spot. The username is built from the roster name and the default password is the registration number followed by the admission number (e.g. `2500013411`). There is no email step.
 - **Forgot password:** reset by emailed code.
 
 > Images (avatars and stories) are downscaled in the browser and stored inline as data URLs, so there is no object-storage service to configure. Keep an eye on row size if you raise the client compression limits.
@@ -48,7 +48,7 @@ Legacy `/discover`, `/programs/:id`, `/search` and `/admin/*` redirect to `/feed
 
 - Passwords hashed with bcrypt (cost 12); OTP codes hashed too, expire after 10 min, allow 5 attempts, have a 60 s resend cooldown, and can be used once.
 - JWT in an `HttpOnly`, `Secure` (prod), `SameSite=Lax` cookie; tokens are invalidated after a password change or when the account is disabled.
-- Sign-up always creates `role: user` (the request body can't set role).
+- Roster-provisioned accounts always get `role: user`; the request body can't set role.
 - Rate limits on the whole API, plus stricter ones on login, OTP and chat; accounts lock for 15 min after 5 failed logins.
 - Helmet headers, no `X-Powered-By`, CORS limited to an explicit allow-list (never reflects arbitrary origins).
 - Input validation with Zod; invalid IDs return a clean 400/404; production errors never expose database internals.
