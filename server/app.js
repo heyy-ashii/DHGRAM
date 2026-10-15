@@ -14,6 +14,7 @@ import messageRoutes from './routes/messages.js';
 import postRoutes from './routes/posts.js';
 import reportRoutes from './routes/reports.js';
 import storyRoutes from './routes/stories.js';
+import { ensureSchema } from './supabase/migrate.js';
 import { asyncHandler } from './utils/AppError.js';
 
 export function createApp({ connect = connectDB } = {}) {
@@ -54,9 +55,16 @@ export function createApp({ connect = connectDB } = {}) {
   );
 
   app.use('/api', apiLimiter);
-  // MongoDB is only connected when it is the datastore; Sheets and Supabase
-  // connect lazily on first query.
-  const ensureStore = datastore() === 'mongo' ? connect : async () => {};
+  // MongoDB is only connected when it is the datastore; Sheets connects lazily.
+  // Supabase also provisions its schema here, so a deploy never runs against a
+  // database that lags the code (the migrations are idempotent and additive).
+  const store = datastore();
+  const ensureStore =
+    store === 'mongo'
+      ? connect
+      : store === 'supabase'
+        ? () => ensureSchema()
+        : async () => {};
   app.use(
     '/api',
     asyncHandler(async (_req, _res, next) => {

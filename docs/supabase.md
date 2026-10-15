@@ -14,13 +14,17 @@ The driver lives in `server/supabase/`:
 | `odm.js` | Mongo-like collection API (`find`, `findOne`, `save`, `populate`, `aggregate`). |
 | `models.js` | Column maps and specs for users, OTPs, conversations, messages, posts and peer chats. |
 
-The schema is `supabase/migrations/0001_init.sql`. Tables are prefixed `app_` so
-they never collide with Supabase's own `auth`, `storage` and `realtime` schemas.
+The schema is the set of files in `supabase/migrations/` (starting at
+`0001_init.sql`). Tables are prefixed `app_` so they never collide with
+Supabase's own `auth`, `storage` and `realtime` schemas.
 
 ## 1. Create the tables
 
-Either paste `supabase/migrations/0001_init.sql` into the Supabase dashboard
-(SQL Editor > New query > Run), or run it from here:
+The app applies every `supabase/migrations/*.sql` **automatically on the first
+API request** (see `server/supabase/migrate.js`), so a deploy provisions its own
+schema and you normally have nothing to run. If you would rather do it by hand
+(the same files, in name order), either paste them into the Supabase dashboard
+(SQL Editor > New query > Run), or run:
 
 ```bash
 SUPABASE_URL=https://<ref>.supabase.co \
