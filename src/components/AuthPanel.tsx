@@ -266,8 +266,8 @@ export default function AuthPanel({
               "Some of the best things I've learned weren't on the syllabus."
             </blockquote>
             <figcaption className="flex items-center gap-2.5 text-xs text-ink-500">
-              <span className="grid size-8 place-items-center rounded-full bg-gradient-to-br from-brand to-accent text-xs font-bold text-white">A</span>
-              Amina Rahman · @amina.rahman
+              <span className="grid size-8 place-items-center rounded-full bg-gradient-to-br from-brand to-accent text-xs font-bold text-white">J</span>
+              Jiyad CP · @jiyad.cp
             </figcaption>
           </figure>
         </div>
