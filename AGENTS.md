@@ -271,3 +271,11 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
   table's real columns and drops unknown ones from writes, so login degrades to
   username-only instead of failing. Still apply the migration for registration-
   number login to work.
+- A missing **table** (a feature's migration never applied, e.g. `app_games` when
+  `0008_chess.sql` is not run) is Postgres `42P01` (`relation "app_games" does not
+  exist`). The ODM treats it as an empty table on reads and answers a write with a
+  503 (`That feature is temporarily unavailable…`) instead of an opaque 500 — this
+  was the "Something went wrong" the chess page showed. The empty-column set is
+  deliberately **not** cached, so once the migration runs the same warm process
+  writes normally again. The message checks are anchored (`^relation`) because a
+  missing column's message also contains "relation".

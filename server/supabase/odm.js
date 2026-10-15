@@ -74,7 +74,12 @@ async function knownColumns(table) {
       'select column_name from information_schema.columns where table_schema = current_schema() and table_name = $1',
       [table],
     );
-    columnCache.set(table, new Set(rows.map((r) => r.column_name)));
+    const columns = new Set(rows.map((r) => r.column_name));
+    // An empty set means the table does not exist yet; do not cache that, or a
+    // later write after the migration runs would drop every column and insert
+    // `default values` (failing a not-null constraint).
+    if (columns.size) columnCache.set(table, columns);
+    return columns;
   }
   return columnCache.get(table);
 }
@@ -93,6 +98,26 @@ function isMissingColumnError(err) {
   return err?.code === '42703' || /column .* does not exist/i.test(String(err?.message ?? ''));
 }
 
+// A deployed database can also be missing a whole table the code assumes (a new
+// feature's migration was never applied). Postgres reports that as 42P01 with the
+// message `relation "x" does not exist`. A missing column (42703) says
+// `column "c" of relation "x" does not exist`, so the message check is anchored to
+// the start to keep the two apart. Reads treat a missing table as empty and writes
+// fail with a clear, operational error, so an unprovisioned feature degrades
+// instead of 500ing the page.
+function isMissingTableError(err) {
+  return err?.code === '42P01' || /^relation .* does not exist/i.test(String(err?.message ?? ''));
+}
+
+async function tolerateMissingTable(run, fallback) {
+  try {
+    return await run();
+  } catch (err) {
+    if (isMissingTableError(err)) return fallback;
+    throw err;
+  }
+}
+
 // Run a write with the document mapped to existing columns only. If the write
 // still hits a missing column (the cached schema was stale because a migration
 // ran while this process was warm), re-read the schema and try once more.
@@ -100,6 +125,9 @@ async function write(table, spec, doc, run) {
   try {
     return await run(await writeColumns(table, spec, doc));
   } catch (err) {
+    if (isMissingTableError(err)) {
+      throw new AppError('That feature is temporarily unavailable. Please try again later.', 503);
+    }
     if (!isMissingColumnError(err)) throw err;
     columnCache.delete(table);
     return run(await writeColumns(table, spec, doc));
@@ -112,11 +140,12 @@ export function createCollection(spec) {
 
   async function selectWhere(where, { order = '', limit = '', single = false } = {}) {
     const text = `select * from ${table} where ${where.toString()} ${order} ${limit}`.trim();
-    const { rows } = await query(text, where.params);
+    const rows = await tolerateMissingTable(async () => (await query(text, where.params)).rows, []);
     return single ? rows[0] ?? null : rows;
   }
 
-  const all = async () => (await query(`select * from ${table}`)).rows.map((r) => fromRow(spec, r));
+  const all = async () =>
+    (await tolerateMissingTable(async () => (await query(`select * from ${table}`)).rows, [])).map((r) => fromRow(spec, r));
 
   const makeDoc = (row) => {
     const data = fromRow(spec, row);
@@ -172,7 +201,7 @@ export function createCollection(spec) {
       },
       equals: (other) => String(self._id) === String(other?._id ?? other),
       deleteOne: async () => {
-        await query(`delete from ${table} where id = $1`, [self._id]);
+        await tolerateMissingTable(() => query(`delete from ${table} where id = $1`, [self._id]), null);
       },
       lean: () => ({ ...state.data, _id: state.data._id }),
       toObject: () => ({ ...state.data, _id: state.data._id }),
@@ -296,12 +325,15 @@ export function createCollection(spec) {
     },
     findByIdAndDelete: async (id) => {
       if (!isUuid(id)) return null;
-      const { rows } = await query(`delete from ${table} where id = $1 returning *`, [id]);
+      const rows = await tolerateMissingTable(async () => (await query(`delete from ${table} where id = $1 returning *`, [id])).rows, []);
       return rows[0] ? makeDoc(rows[0]) : null;
     },
     findOneAndDelete: async (filter = {}) => {
       const where = buildWhere(filter, map);
-      const { rows } = await query(`delete from ${table} where id in (select id from ${table} where ${where.toString()} limit 1) returning *`, where.params);
+      const rows = await tolerateMissingTable(
+        async () => (await query(`delete from ${table} where id in (select id from ${table} where ${where.toString()} limit 1) returning *`, where.params)).rows,
+        [],
+      );
       return rows[0] ? makeDoc(rows[0]) : null;
     },
     findOneAndUpdate: async (filter = {}, update = {}, opts = {}) => {
@@ -312,12 +344,12 @@ export function createCollection(spec) {
     },
     countDocuments: async (filter = {}) => {
       const where = buildWhere(filter, map);
-      const { rows } = await query(`select count(*)::int as total from ${table} where ${where.toString()}`, where.params);
+      const rows = await tolerateMissingTable(async () => (await query(`select count(*)::int as total from ${table} where ${where.toString()}`, where.params)).rows, []);
       return rows[0]?.total ?? 0;
     },
     exists: async (filter = {}) => {
       const where = buildWhere(filter, map);
-      const { rows } = await query(`select 1 from ${table} where ${where.toString()} limit 1`, where.params);
+      const rows = await tolerateMissingTable(async () => (await query(`select 1 from ${table} where ${where.toString()} limit 1`, where.params)).rows, []);
       return rows.length > 0;
     },
     updateMany: async (filter = {}, update = {}) => {
@@ -353,7 +385,7 @@ export function createCollection(spec) {
         }
       }
       if (!selects.length) return [];
-      const { rows } = await query(`select ${selects.join(', ')} from ${table} where ${where.toString()}`, where.params);
+      const rows = await tolerateMissingTable(async () => (await query(`select ${selects.join(', ')} from ${table} where ${where.toString()}`, where.params)).rows, []);
       return [{ _id: null, ...(rows[0] || {}) }];
     },
   };
