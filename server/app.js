@@ -8,6 +8,7 @@ import { apiLimiter } from './middleware/rateLimit.js';
 import adminRoutes from './routes/admin.js';
 import authRoutes from './routes/auth.js';
 import chatRoutes from './routes/chat.js';
+import chessRoutes from './routes/chess.js';
 import groupRoutes from './routes/groups.js';
 import messageRoutes from './routes/messages.js';
 import postRoutes from './routes/posts.js';
@@ -74,6 +75,7 @@ export function createApp({ connect = connectDB } = {}) {
   app.use('/api/v1/stories', storyRoutes);
   app.use('/api/v1/messages', messageRoutes);
   app.use('/api/v1/groups', groupRoutes);
+  app.use('/api/v1/chess', chessRoutes);
   app.use('/api/v1/chat', chatRoutes);
   app.use('/api/v1/admin', adminRoutes);
 

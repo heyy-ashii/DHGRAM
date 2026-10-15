@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { protect, restrictTo } from '../middleware/auth.js';
 import { email, name, objectId, password, username, validate } from '../middleware/validate.js';
 import { Conversation, Message } from '../models/Chat.js';
+import { Game } from '../models/Game.js';
 import { Group, GroupMessage } from '../models/GroupChat.js';
 import { PeerConversation, PeerMessage } from '../models/PeerChat.js';
 import { Post } from '../models/Post.js';
@@ -223,6 +224,9 @@ router.delete(
       await GroupMessage.deleteMany({ group: group._id });
     }
     await Group.deleteMany({ createdBy: id });
+
+    // Chess games the user was part of, in either colour.
+    await Game.deleteMany({ $or: [{ white: id }, { black: id }] });
 
     await user.deleteOne();
     res.status(204).end();

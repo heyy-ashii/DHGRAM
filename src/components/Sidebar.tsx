@@ -7,6 +7,7 @@ import Logo from './Logo'
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
 import { navItems } from '../lib/nav'
+import { useChessInvites } from '../lib/queries'
 import { cn } from '../lib/utils'
 
 function Identity({ compact }: { compact?: boolean }) {
@@ -98,6 +99,7 @@ function Identity({ compact }: { compact?: boolean }) {
 export default function Sidebar() {
   const { user, isAdmin } = useAuth()
   const links = navItems(user ? `/u/${user.username}` : '/login')
+  const { data: invites } = useChessInvites(Boolean(user))
 
   return (
     <aside className="sticky top-0 hidden h-screen w-[220px] shrink-0 flex-col justify-between border-r border-ink-200 bg-white px-5 py-7 md:flex dark:border-ink-800 dark:bg-ink-900">
@@ -116,6 +118,11 @@ export default function Sidebar() {
             >
               <l.icon className="size-5 shrink-0" strokeWidth={2} />
               <span className="truncate">{l.label}</span>
+              {l.key === 'chess' && (invites?.length ?? 0) > 0 && (
+                <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-accent px-1 text-[11px] font-bold text-white">
+                  {invites!.length}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>

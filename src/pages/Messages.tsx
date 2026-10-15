@@ -5,6 +5,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import AdminChat from '../components/AdminChat'
 import Avatar from '../components/Avatar'
 import { GroupAvatar, GroupThreadView, NewGroupModal, groupSubtitle } from '../components/GroupChat'
+import { ChessInvitesStrip } from '../components/chess/ChessInvites'
 import SupportInbox from '../components/SupportInbox'
 import { ConfirmModal, EmptyState, Modal, PageSpinner, Spinner } from '../components/ui'
 import { useAuth } from '../context/AuthContext'
@@ -260,6 +261,7 @@ export default function Messages() {
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
+            {!search.trim() && tab === 'all' && <ChessInvitesStrip />}
             {!search.trim() && tab === 'all' && (groupsLoading || (groups ?? []).length > 0) && (
               <div className="border-b border-ink-100 dark:border-ink-800">
                 <p className="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-ink-400">Groups</p>

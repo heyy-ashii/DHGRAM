@@ -13,6 +13,7 @@ import NotFound from './pages/NotFound'
 const Account = lazy(() => import('./pages/Account'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Messages = lazy(() => import('./pages/Messages'))
+const Chess = lazy(() => import('./pages/Chess'))
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'))
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
 const AdminUsers = lazy(() => import('./pages/admin/Users'))
@@ -45,6 +46,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <Messages />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="chess"
+            element={
+              <RequireAuth>
+                <Chess />
               </RequireAuth>
             }
           />

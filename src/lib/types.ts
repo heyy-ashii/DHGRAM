@@ -139,6 +139,48 @@ export interface PeerMessage {
   createdAt: string
 }
 
+export type ChessColor = 'w' | 'b'
+
+// A one-to-one chess game. `myColor`/`myTurn` are relative to the signed-in
+// student. `moves` are SAN strings, `fen` is the current position.
+export interface ChessGame {
+  _id: string
+  status: 'pending' | 'active' | 'finished'
+  result: ChessColor | 'draw' | null
+  resultReason: string | null
+  moves: string[]
+  fen: string
+  myColor: ChessColor
+  turn: ChessColor
+  myTurn: boolean
+  check: boolean
+  gameOver: boolean
+  white: PeerUser
+  black: PeerUser
+  opponent: PeerUser
+  invitedByMe: boolean
+  drawOfferByMe: boolean
+  drawOfferByOpponent: boolean
+  createdAt: string
+  acceptedAt: string | null
+  finishedAt: string | null
+  lastMoveAt: string
+}
+
+export interface ChessInvite {
+  _id: string
+  from: PeerUser
+  createdAt: string
+}
+
+// A student who can be invited to chess: an account with a name and avatar.
+export interface ChessDirectoryUser {
+  _id: string
+  name: string
+  username: string
+  avatar?: string | null
+}
+
 export interface UserDirectory {
   results: number
   total: number

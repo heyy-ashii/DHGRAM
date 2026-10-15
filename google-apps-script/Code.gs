@@ -33,10 +33,11 @@ var COLLECTIONS = {
   Stories: ['id', 'author', 'imageUrl', 'caption', 'createdAt', 'updatedAt'],
   StoryViews: ['id', 'story', 'viewer', 'createdAt', 'updatedAt'],
   Reports: ['id', 'reporter', 'reporterName', 'kind', 'targetId', 'targetLabel', 'reason', 'details', 'status', 'handledBy', 'handledAt', 'createdAt', 'updatedAt'],
+  Games: ['id', 'white', 'black', 'invitedBy', 'status', 'result', 'resultReason', 'moves', 'fen', 'drawOfferedBy', 'acceptedAt', 'finishedAt', 'lastMoveAt', 'createdAt', 'updatedAt'],
 };
 
 // Values that must stay JSON, not strings.
-var JSON_COLUMNS = { likes: true, members: true };
+var JSON_COLUMNS = { likes: true, members: true, moves: true };
 // Values that must be stored as booleans.
 var BOOLEAN_COLUMNS = { emailVerified: true, hidden: true };
 

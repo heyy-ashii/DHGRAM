@@ -3,14 +3,17 @@ import Avatar from './Avatar'
 import Logo from './Logo'
 import { useAuth } from '../context/AuthContext'
 import { navItems } from '../lib/nav'
+import { useChessInvites } from '../lib/queries'
 import { cn } from '../lib/utils'
 
 // Mobile chrome from the handoff: a compact 80px header with the logo (or the
-// page title) plus the signed-in avatar, and a four-item bottom navigation that
-// stays at the viewport edge. Desktop uses Sidebar instead.
+// page title) plus the signed-in avatar, and a bottom navigation that stays at
+// the viewport edge. Desktop uses Sidebar instead.
 export default function Navbar({ title }: { title?: string }) {
   const { user } = useAuth()
   const links = navItems(user ? `/u/${user.username}` : '/login')
+  const { data: invites } = useChessInvites(Boolean(user))
+  const inviteCount = invites?.length ?? 0
 
   return (
     <>
@@ -48,7 +51,14 @@ export default function Navbar({ title }: { title?: string }) {
             }
           >
             <l.icon className="size-5" strokeWidth={2} />
-            {l.label}
+            <span className="relative">
+              {l.label}
+              {l.key === 'chess' && inviteCount > 0 && (
+                <span className="absolute -right-3 -top-2 grid min-w-4 place-items-center rounded-full bg-accent px-1 text-[9px] font-bold text-white">
+                  {inviteCount}
+                </span>
+              )}
+            </span>
           </NavLink>
         ))}
       </nav>

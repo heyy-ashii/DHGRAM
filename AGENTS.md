@@ -81,6 +81,30 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
   loads more with `useStudentDirectory` (an infinite query) and `directoryUsers`.
   Accounts not on the roster (the admin, hand-made accounts) are listed too.
 
+
+## Chess (one-to-one)
+
+- `server/routes/chess.js` + `server/models/Game.js` back student-to-student
+  chess. A game starts as a `pending` invite (`POST /chess/invite`, needs the
+  opponent's user id); the invitee accepts (`POST /chess/:id/accept`, row goes
+  `active`) or declines (`POST /chess/:id/decline`, row is deleted). Moves go
+  through `POST /chess/:id/move` and are validated with `chess.js` on the server,
+  so the stored FEN can always be trusted; `resign`, `draw` (offer/accept/decline)
+  and `rematch` finish or restart the row. Every route requires auth, and a game
+  is visible only to its two players (`isPlayer`).
+- A game row stores `white`, `black` and `invitedBy` user ids plus `status`,
+  `result`, `resultReason`, the SAN `moves` list, `fen` and `drawOfferedBy`.
+  The games list (`GET /chess`) and the incoming-invite list (`GET /chess/invites`)
+  **populate `white`/`black`** so names and avatars come back, not bare ids.
+- Storage parity: `supabase/migrations/0008_chess.sql` defines `app_games`;
+  `server/supabase/models.js` + `server/sheets/models.js` add the game spec, and
+  the sheet stores `moves` as a JSON column. Deleting a user removes their games
+  in `server/routes/admin.js` (Postgres cascades).
+- UI: `src/pages/Chess.tsx` (game list + board panel), `src/components/chess/`
+  (`ChessBoard`, invite picker, `ChessInvitesStrip`). The Messages sidebar shows
+  pending invites under the `all` tab, and the nav carries a pending-invite badge.
+  The client polls the open game so the board follows the opponent's move.
+
 ## Group chats (multi-user)
 
 - `server/routes/groups.js` + `server/models/GroupChat.js` back multi-user group
