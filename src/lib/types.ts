@@ -72,6 +72,13 @@ export interface AdminThoughtsList {
 
 export type PeerUser = Pick<User, '_id' | 'name' | 'username'> & { avatar?: string | null }
 
+// A row in the Messages directory. `joined` is false for a roster student who has
+// not signed in yet; such rows have no `_id` and cannot be messaged.
+export interface DirectoryUser extends Omit<PeerUser, '_id'> {
+  _id: string | null
+  joined: boolean
+}
+
 export interface ChatMessage {
   _id: string
   body: string
@@ -137,7 +144,7 @@ export interface UserDirectory {
   total: number
   page: number
   pages: number
-  data: { users: PeerUser[] }
+  data: { users: DirectoryUser[] }
 }
 
 // A student in the admin support inbox's full directory. `conversationId` is null

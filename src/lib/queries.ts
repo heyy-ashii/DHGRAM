@@ -55,11 +55,17 @@ export const useMessageThread = (id?: string) =>
   })
 
 export const useStudentDirectory = (q: string, enabled = true) =>
-  useQuery({
+  useInfiniteQuery({
     queryKey: ['messages', 'directory', q],
-    queryFn: () => api<UserDirectory>('/messages/directory', { query: { q, limit: 30 } }),
+    queryFn: ({ pageParam }) => api<UserDirectory>('/messages/directory', { query: { q, page: pageParam, limit: 50 } }),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.page < last.pages ? last.page + 1 : undefined),
     enabled,
   })
+
+// Flattens the paginated directory into one list of rows.
+export const directoryUsers = (data: { pages: UserDirectory[] } | undefined) =>
+  (data?.pages ?? []).flatMap((p) => p.data.users)
 
 // The admin support inbox's full student list, paginated for "load more".
 export const useSupportDirectory = (q: string, unanswered = false, enabled = true) =>

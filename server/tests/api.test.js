@@ -3,7 +3,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 process.env.NODE_ENV = 'test';
-process.env.ROSTER_CSV = 'AD.NO,REG. NO,NAME,PHONE,EMAIL\n3411,250001,New Student,,\n3412,250002,Second Student,,\n3413,250003,Legacy Student,,\n';
+process.env.ROSTER_CSV = 'AD.NO,REG. NO,NAME,PHONE,EMAIL\n3411,250001,New Student,,\n3412,250002,Second Student,,\n3413,250003,Legacy Student,,\n3414,250004,Never Joined Student,,\n3415,250005,Provisioned Student,,\n';
 // This suite runs on the in-memory MongoDB. Blank the other datastore settings
 // that .env may carry so tests never reach a hosted database. Empty strings are
 // used deliberately: dotenv does not override keys that already exist.
@@ -271,6 +271,49 @@ describe('peer messages', () => {
     const { agent: nosy } = await login('nosyparker', 'nosypass1');
     expect((await nosy.get(`/api/v1/messages/${id}`)).status).toBe(404);
     expect((await nosy.post(`/api/v1/messages/${id}`).send({ body: 'peek' })).status).toBe(404);
+  });
+
+  it('lists roster students who have not signed in yet, flagged as not joined', async () => {
+    const { User } = await import('../models/User.js');
+    const { agent: one } = await login('new.student', '2500013411');
+    const { agent: two } = await login('second.student', '2500023412');
+    expect(two).toBeTruthy();
+    // Pre-provisioned by the admin script: an account exists, but nobody has
+    // signed into it yet.
+    await User.create({ name: 'Provisioned Student', username: 'provisioned.student', regNo: '250005', password: '2500053415' });
+
+    const dir = await one.get('/api/v1/messages/directory');
+    expect(dir.status).toBe(200);
+    const users = dir.body.data.users;
+
+    // A signed-in student is listed with their account id and joined=true.
+    const signedIn = users.find((u) => u.name === 'Second Student');
+    expect(signedIn).toMatchObject({ joined: true, username: 'second.student' });
+    expect(signedIn._id).toBeTruthy();
+
+    // A roster student with no account yet is still listed, flagged and has no id
+    // so the UI cannot try to message them.
+    const notYet = users.find((u) => u.name === 'Never Joined Student');
+    expect(notYet).toMatchObject({ joined: false, _id: null });
+
+    // A pre-provisioned account that has never signed in is flagged, but keeps its
+    // id so it can still be messaged.
+    const provisioned = users.find((u) => u.name === 'Provisioned Student');
+    expect(provisioned).toMatchObject({ joined: false });
+    expect(provisioned._id).toBeTruthy();
+
+    // The caller never sees themselves.
+    expect(users.some((u) => u.name === 'New Student')).toBe(false);
+
+    // Search reaches not-joined roster students too.
+    const search = await one.get('/api/v1/messages/directory?q=never');
+    expect(search.body.data.users.map((u) => u.name)).toContain('Never Joined Student');
+
+    // The merged list is paginated.
+    const paged = await one.get('/api/v1/messages/directory?limit=1');
+    expect(paged.body.data.users).toHaveLength(1);
+    expect(paged.body.pages).toBeGreaterThan(1);
+    expect(paged.body.total).toBeGreaterThan(1);
   });
 
   it('drops peer messages older than the retention window', async () => {

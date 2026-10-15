@@ -10,9 +10,9 @@ import { ConfirmModal, EmptyState, Modal, PageSpinner, Spinner } from '../compon
 import { useAuth } from '../context/AuthContext'
 import { useUi } from '../context/UiContext'
 import { api, errorMessage } from '../lib/api'
-import type { MessageThread } from '../lib/types'
+import type { DirectoryUser, MessageThread } from '../lib/types'
 import { usePageMeta } from '../lib/usePageMeta'
-import { useGroups, useMessageThread, useMessageThreads, useStudentDirectory } from '../lib/queries'
+import { useGroups, useMessageThread, useMessageThreads, useStudentDirectory, directoryUsers } from '../lib/queries'
 import { cn, formatShort, formatTime } from '../lib/utils'
 
 const ADMIN_KEY = 'admin'
@@ -136,7 +136,7 @@ function NewChatPicker({ open, onClose, onStarted }: { open: boolean; onClose: (
     },
     onError: (err) => toast(errorMessage(err), 'error'),
   })
-  const users = data?.data.users ?? []
+  const users = directoryUsers(data).filter((u): u is DirectoryUser & { _id: string } => Boolean(u._id))
 
   return (
     <Modal open={open} onClose={onClose} title="New message">
@@ -181,7 +181,7 @@ export default function Messages() {
   const [tab, setTab] = useState<'all' | 'unread'>('all')
   const { data: threads, isLoading } = useMessageThreads(Boolean(user) && !isAdmin)
   const { data: groups, isLoading: groupsLoading } = useGroups(Boolean(user) && !isAdmin)
-  const { data: directory, isLoading: dirLoading } = useStudentDirectory(search, Boolean(user) && !isAdmin)
+  const { data: directory, isLoading: dirLoading, hasNextPage, isFetchingNextPage, fetchNextPage } = useStudentDirectory(search, Boolean(user) && !isAdmin)
 
   const start = useMutation({
     mutationFn: (userId: string) => api<{ data: { conversation: MessageThread } }>('/messages/start', { method: 'POST', body: { userId } }),
@@ -194,7 +194,8 @@ export default function Messages() {
   })
 
   // Show every other student in the list, not just existing conversations, so a
-  // chat can be started straight from the sidebar.
+  // chat can be started straight from the sidebar. Students who have not signed
+  // in yet are listed too, but marked as such and cannot be messaged.
   const list = useMemo(() => {
     const term = search.trim().toLowerCase()
     const conversations = (threads ?? []).filter((t) => {
@@ -204,7 +205,7 @@ export default function Messages() {
     })
     if (tab === 'unread') return conversations
     const seen = new Set(conversations.map((c) => c.peer?._id))
-    const others = (directory?.data.users ?? []).filter((u) => !seen.has(u._id))
+    const others = directoryUsers(directory).filter((u) => !u._id || !seen.has(u._id))
     return [...conversations, ...others]
   }, [threads, directory, search, tab])
 
@@ -304,30 +305,60 @@ export default function Messages() {
                 )}
               </div>
             ) : (
-              list.map((item) => {
-                const isThread = 'peer' in item
-                const peer = isThread ? item.peer : item
-                return (
-                  <button
-                    key={item._id}
-                    onClick={() => (isThread ? setSelected(item._id) : start.mutate(peer._id))}
-                    disabled={!isThread && start.isPending}
-                    className={cn('flex w-full items-center gap-3 border-b border-ink-100 px-4 py-3 text-left hover:bg-ink-50 dark:border-ink-800 dark:hover:bg-ink-800/40', isThread && selected === item._id && 'bg-brand-soft dark:bg-brand/15')}
-                  >
-                    <Avatar user={peer} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate font-semibold">{peer.name ?? 'Student'}</span>
-                        {isThread && <span className="shrink-0 text-[11px] text-ink-400">{formatShort(item.lastMessageAt)}</span>}
+              <>
+                {list.map((item, idx) => {
+                  const isThread = 'peer' in item
+                  if (isThread) {
+                    const peer = item.peer
+                    return (
+                      <button
+                        key={item._id}
+                        onClick={() => setSelected(item._id)}
+                        className={cn('flex w-full items-center gap-3 border-b border-ink-100 px-4 py-3 text-left hover:bg-ink-50 dark:border-ink-800 dark:hover:bg-ink-800/40', selected === item._id && 'bg-brand-soft dark:bg-brand/15')}
+                      >
+                        <Avatar user={peer} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate font-semibold">{peer.name ?? 'Student'}</span>
+                            <span className="shrink-0 text-[11px] text-ink-400">{formatShort(item.lastMessageAt)}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate text-sm text-ink-500">{item.lastMessage || 'No messages yet'}</span>
+                            {item.unread > 0 && <span className="grid size-5 shrink-0 place-items-center rounded-full bg-brand text-[10px] font-bold text-white">{item.unread}</span>}
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  }
+                  // A roster student with no account yet is listed but not messaged;
+                  // one who has an account but has not signed in can still be messaged.
+                  const canMessage = Boolean(item._id)
+                  return (
+                    <button
+                      key={item._id ?? `roster-${idx}`}
+                      onClick={() => canMessage && start.mutate(item._id as string)}
+                      disabled={!canMessage || start.isPending}
+                      className="flex w-full items-center gap-3 border-b border-ink-100 px-4 py-3 text-left hover:bg-ink-50 disabled:cursor-default disabled:hover:bg-transparent dark:border-ink-800 dark:hover:bg-ink-800/40 dark:disabled:hover:bg-transparent"
+                    >
+                      <Avatar user={item} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={cn('truncate font-semibold', !item.joined && 'text-ink-500')}>{item.name || 'Student'}</span>
+                          {!item.joined && item._id && <span className="shrink-0 rounded-full bg-ink-100 px-2 py-0.5 text-[10px] font-semibold text-ink-500 dark:bg-ink-800 dark:text-ink-400">Not signed in yet</span>}
+                        </div>
+                        <span className="block truncate text-sm text-ink-500">{item._id ? (item.username ? `@${item.username}` : 'Start a chat') : 'No account yet'}</span>
                       </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm text-ink-500">{isThread ? item.lastMessage || 'No messages yet' : peer.username ? `@${peer.username}` : 'Start a chat'}</span>
-                        {isThread && item.unread > 0 && <span className="grid size-5 shrink-0 place-items-center rounded-full bg-brand text-[10px] font-bold text-white">{item.unread}</span>}
-                      </div>
-                    </div>
-                  </button>
-                )
-              })
+                    </button>
+                  )
+                })}
+                {hasNextPage && tab !== 'unread' && (
+                  <div className="p-3">
+                    <button className="btn-outline w-full" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+                      {isFetchingNextPage ? <Spinner className="size-4" /> : 'Load more students'}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
           <p className="border-t border-ink-100 px-5 py-4 text-[11px] text-ink-400 dark:border-ink-800">

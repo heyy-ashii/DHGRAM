@@ -69,9 +69,17 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
   keyed by the unordered pair (`pairFor`) so both directions share one thread.
 - `server/routes/chat.js` purges peer messages older than
   `config.chat.retentionDays` (30) whenever a thread is read.
-- The `/messages` sidebar lists **all other active students** (from
-  `/messages/directory`) on top of existing conversations; picking someone with
-  no thread calls `/messages/start` and opens it.
+- The `/messages` sidebar lists **every roster student** (from
+  `/messages/directory`), not just existing conversations, so the whole class is
+  visible from day one. Each row carries `joined` (true once the student has
+  signed in at least once, i.e. `lastLoginAt` is set); a roster student with no
+  account yet has `_id: null` and is shown as "No account yet" and cannot be
+  messaged, while a pre-provisioned account that has never signed in is flagged
+  "Not signed in yet" but stays messageable. Picking someone with no thread calls
+  `/messages/start` and opens it. The directory merges the roster with accounts
+  (matched by `regNo`, then by roster-derived username) and is paginated; the UI
+  loads more with `useStudentDirectory` (an infinite query) and `directoryUsers`.
+  Accounts not on the roster (the admin, hand-made accounts) are listed too.
 
 ## Group chats (multi-user)
 
