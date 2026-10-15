@@ -24,8 +24,12 @@ beforeAll(async () => {
   process.env.SUPABASE_URL = 'https://test.supabase.co';
   process.env.SUPABASE_DB_URL = DB_URL;
 
-  // `pg` reads the connection string; tests need a clean slate.
+  // `pg` reads the connection string; tests need a clean slate. Provision the
+  // schema first (as the app now does on first request) so the suite needs no
+  // manual `npm run supabase:apply`.
   ({ getPool: db, closePool } = await import('../supabase/db.js'));
+  const { ensureSchema } = await import('../supabase/migrate.js');
+  await ensureSchema();
   await db().query('truncate ' + TABLES.join(', ') + ' restart identity cascade');
 
   const { createApp } = await import('../app.js');
@@ -317,5 +321,21 @@ describeIfDb('DHGRAM on Supabase (Postgres)', () => {
     // schema cache must not have latched onto the empty (missing-table) state.
     const after = await one.post('/api/v1/chess/invite').send({ userId: String(target._id), color: 'white' });
     expect(after.status).toBe(201);
+  });
+
+  it('provisions the schema on the first API request (auto-migrate)', async () => {
+    // A fresh deploy runs the migrations itself, so a missing table heals without
+    // anyone remembering to run `npm run supabase:apply`.
+    const { resetSchemaMemo } = await import('../supabase/migrate.js');
+    await db().query('drop table if exists app_games cascade');
+    const gone = await db().query("select to_regclass('public.app_games') as t");
+    expect(gone.rows[0].t).toBeNull();
+
+    resetSchemaMemo();
+    // Any request routed through /api runs ensureSchema before the route.
+    await request(app).get('/api/v1/chess');
+
+    const back = await db().query("select to_regclass('public.app_games') as t");
+    expect(back.rows[0].t).toBe('app_games');
   });
 });

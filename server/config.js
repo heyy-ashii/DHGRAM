@@ -49,6 +49,10 @@ export const config = {
     // driver talks SQL over pg instead of HTTP through PostgREST.
     dbUrl: env.SUPABASE_DB_URL || '',
     timeoutMs: Number(env.SUPABASE_TIMEOUT_MS) || 10000,
+    // Run supabase/migrations/*.sql on first request so a deploy never depends
+    // on the migrations being applied by hand. Set SUPABASE_AUTO_MIGRATE=false
+    // to turn it off (e.g. a locked-down production database).
+    autoMigrate: env.SUPABASE_AUTO_MIGRATE !== 'false',
   },
   otp: {
     ttlMinutes: 10,
