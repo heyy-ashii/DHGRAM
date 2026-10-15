@@ -17,7 +17,7 @@ let app;
 let db;
 let closePool;
 
-const TABLES = ['app_reports', 'app_peer_messages', 'app_peer_conversations', 'app_messages', 'app_conversations', 'app_otps', 'app_posts', 'app_users'];
+const TABLES = ['app_games', 'app_reports', 'app_peer_messages', 'app_peer_conversations', 'app_messages', 'app_conversations', 'app_otps', 'app_posts', 'app_users'];
 
 beforeAll(async () => {
   if (!DB_URL) return;
@@ -233,5 +233,38 @@ describeIfDb('DHGRAM on Supabase (Postgres)', () => {
     } finally {
       await db().query('alter table app_users add column if not exists reg_no text');
     }
+  });
+
+  it('runs a chess game on Postgres, storing the move list in a text[]', async () => {
+    const { User } = await import('../models/User.js');
+    await User.create({ name: 'Board One', username: 'boardone', password: 'boardone1', status: 'active' });
+    await User.create({ name: 'Board Two', username: 'boardtwo', password: 'boardtwo1', status: 'active' });
+    const one = request.agent(app);
+    const two = request.agent(app);
+    await one.post('/api/v1/auth/login').send({ identifier: 'boardone', password: 'boardone1' });
+    await two.post('/api/v1/auth/login').send({ identifier: 'boardtwo', password: 'boardtwo1' });
+
+    const dir = await one.get('/api/v1/messages/directory?q=boardtwo');
+    const twoId = dir.body.data.users.find((u) => u.username === 'boardtwo')._id;
+
+    const invite = await one.post('/api/v1/chess/invite').send({ userId: twoId, color: 'white' });
+    expect(invite.status).toBe(201);
+    const id = invite.body.data.game._id;
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
+    expect((await two.get('/api/v1/chess/invites')).body.data.invites.map((i) => i._id)).toContain(id);
+
+    await two.post(`/api/v1/chess/${id}/accept`);
+    expect((await two.post(`/api/v1/chess/${id}/move`).send({ from: 'e7', to: 'e5' })).status).toBe(400);
+    await one.post(`/api/v1/chess/${id}/move`).send({ from: 'e2', to: 'e4' });
+    await two.post(`/api/v1/chess/${id}/move`).send({ from: 'e7', to: 'e5' });
+
+    const game = (await one.get(`/api/v1/chess/${id}`)).body.data.game;
+    // The SAN list round-trips through the text[] column.
+    expect(game.moves).toEqual(['e4', 'e5']);
+    expect(game.fen).toBe('rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2');
+    expect((await one.get('/api/v1/chess')).body.data.games.map((g) => g._id)).toContain(id);
+
+    const resigned = await two.post(`/api/v1/chess/${id}/resign`);
+    expect(resigned.body.data.game).toMatchObject({ status: 'finished', result: 'w', resultReason: 'resignation' });
   });
 });

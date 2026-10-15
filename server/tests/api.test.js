@@ -632,9 +632,12 @@ describe('admin', () => {
 
     // Deleting removes the account and the content it owned.
     const { Post } = await import('../models/Post.js');
+    const { Game } = await import('../models/Game.js');
     await Post.create({ author: id, body: 'will be deleted' });
+    await Game.create({ white: id, black: meId, invitedBy: id, status: 'active' });
     expect((await admin.delete(`/api/v1/admin/users/${id}`)).status).toBe(204);
     expect(await Post.countDocuments({ author: id })).toBe(0);
+    expect(await Game.countDocuments({ $or: [{ white: id }, { black: id }] })).toBe(0);
     expect((await admin.get('/api/v1/admin/users?q=managed')).body.data.users).toHaveLength(0);
     expect((await admin.delete(`/api/v1/admin/users/${meId}`)).status).toBe(400);
   });
@@ -810,3 +813,157 @@ describe('reports and moderation', () => {
     await admin.patch(`/api/v1/admin/reports/${report._id}`).send({ action: 'dismiss' });
   });
 });
+
+describe('chess', () => {
+  // Reused across the block: create the players once, and clear any game left by
+  // an earlier test so an open invite never bleeds into the next one.
+  const setup = async () => {
+    const { User } = await import('../models/User.js');
+    const { Game } = await import('../models/Game.js');
+    const ensure = async (name, username) => {
+      if (!(await User.findOne({ username }))) await User.create({ name, username, password: `${username}1`, status: 'active' });
+    };
+    await ensure('Chess One', 'chessone');
+    await ensure('Chess Two', 'chesstwo');
+    await ensure('Chess Three', 'chessthree');
+    await Game.deleteMany({});
+
+    const { agent: one, res: r1 } = await login('chessone', 'chessone1');
+    const { agent: two, res: r2 } = await login('chesstwo', 'chesstwo1');
+    const { agent: three, res: r3 } = await login('chessthree', 'chessthree1');
+    expect([r1.status, r2.status, r3.status]).toEqual([200, 200, 200]);
+    const dir = await one.get('/api/v1/messages/directory?q=chesstwo');
+    const twoId = dir.body.data.users.find((u) => u.username === 'chesstwo')._id;
+    return { one, two, three, twoId };
+  };
+
+  it('requires a login', async () => {
+    expect((await request(app).get('/api/v1/chess')).status).toBe(401);
+    expect((await request(app).get('/api/v1/chess/invites')).status).toBe(401);
+    expect((await request(app).post('/api/v1/chess/invite').send({ userId: 'a'.repeat(24) })).status).toBe(401);
+  });
+
+  it('invites, accepts and plays a legal game, rejecting illegal moves', async () => {
+    const { one, two, twoId } = await setup();
+
+    const invite = await one.post('/api/v1/chess/invite').send({ userId: twoId, color: 'white' });
+    expect(invite.status).toBe(201);
+    const id = invite.body.data.game._id;
+    expect(invite.body.data.game).toMatchObject({ status: 'pending', myColor: 'w', turn: 'w' });
+    expect(invite.body.data.game.opponent.username).toBe('chesstwo');
+
+    // A second open invite to the same student is refused.
+    expect((await one.post('/api/v1/chess/invite').send({ userId: twoId })).status).toBe(409);
+
+    // The invitee sees it; the sender does not see it as an incoming invite.
+    const invites = (await two.get('/api/v1/chess/invites')).body.data.invites;
+    expect(invites.map((i) => i._id)).toContain(id);
+    expect(invites[0].from.username).toBe('chessone');
+    expect((await one.get('/api/v1/chess/invites')).body.data.invites).toHaveLength(0);
+
+    // No moves until the game starts.
+    expect((await one.post(`/api/v1/chess/${id}/move`).send({ from: 'e2', to: 'e4' })).status).toBe(409);
+
+    // The sender cannot accept their own invitation.
+    expect((await one.post(`/api/v1/chess/${id}/accept`)).status).toBe(400);
+    expect((await two.post(`/api/v1/chess/${id}/accept`)).body.data.game.status).toBe('active');
+    expect((await two.get('/api/v1/chess/invites')).body.data.invites).toHaveLength(0);
+
+    // Black cannot move out of turn.
+    expect((await two.post(`/api/v1/chess/${id}/move`).send({ from: 'e7', to: 'e5' })).status).toBe(400);
+
+    const e4 = await one.post(`/api/v1/chess/${id}/move`).send({ from: 'e2', to: 'e4' });
+    expect(e4.body.data.game.moves).toEqual(['e4']);
+    expect(e4.body.data.game).toMatchObject({ turn: 'b', myTurn: false });
+
+    // An illegal move is rejected and leaves the game untouched.
+    expect((await two.post(`/api/v1/chess/${id}/move`).send({ from: 'd8', to: 'd4' })).status).toBe(400);
+    expect((await one.get(`/api/v1/chess/${id}`)).body.data.game.moves).toEqual(['e4']);
+
+    const e5 = await two.post(`/api/v1/chess/${id}/move`).send({ from: 'e7', to: 'e5' });
+    expect(e5.body.data.game.moves).toEqual(['e4', 'e5']);
+    expect((await one.get(`/api/v1/chess/${id}`)).body.data.game.moves).toEqual(['e4', 'e5']);
+
+    // The games list carries the players' names, not just their ids.
+    const listed = (await one.get('/api/v1/chess')).body.data.games.find((g) => g._id === id);
+    expect(listed.opponent.username).toBe('chesstwo');
+    expect(listed.white.username).toBe('chessone');
+  });
+
+  it('declines an invitation by removing it', async () => {
+    const { one, two, twoId } = await setup();
+    const id = (await one.post('/api/v1/chess/invite').send({ userId: twoId })).body.data.game._id;
+    expect((await two.post(`/api/v1/chess/${id}/decline`)).status).toBe(204);
+    expect((await two.get('/api/v1/chess/invites')).body.data.invites).toHaveLength(0);
+    expect((await one.get(`/api/v1/chess/${id}`)).status).toBe(404);
+    // The pair is free to invite again.
+    expect((await one.post('/api/v1/chess/invite').send({ userId: twoId })).status).toBe(201);
+  });
+
+  it('hides a game from students who are not playing', async () => {
+    const { one, twoId, three } = await setup();
+    const id = (await one.post('/api/v1/chess/invite').send({ userId: twoId })).body.data.game._id;
+    expect((await three.get(`/api/v1/chess/${id}`)).status).toBe(404);
+    expect((await three.post(`/api/v1/chess/${id}/accept`)).status).toBe(404);
+    expect((await three.get('/api/v1/chess')).body.data.games).toHaveLength(0);
+  });
+
+  it('refuses to invite a student with no account', async () => {
+    const { one } = await setup();
+    const mongoose = (await import('mongoose')).default;
+    const ghost = new mongoose.Types.ObjectId().toString();
+    expect((await one.post('/api/v1/chess/invite').send({ userId: ghost })).status).toBe(404);
+    expect((await one.post('/api/v1/chess/invite').send({ userId: 'nope' })).status).toBe(400);
+  });
+
+  it('records a resignation and allows a rematch', async () => {
+    const { one, two, twoId } = await setup();
+    const id = (await one.post('/api/v1/chess/invite').send({ userId: twoId, color: 'white' })).body.data.game._id;
+    await two.post(`/api/v1/chess/${id}/accept`);
+
+    const resigned = await one.post(`/api/v1/chess/${id}/resign`);
+    expect(resigned.body.data.game).toMatchObject({ status: 'finished', result: 'b', resultReason: 'resignation' });
+
+    // No moves once the game is over.
+    expect((await two.post(`/api/v1/chess/${id}/move`).send({ from: 'e7', to: 'e5' })).status).toBe(409);
+
+    const rematch = await one.post(`/api/v1/chess/${id}/rematch`);
+    expect(rematch.status).toBe(201);
+    expect(rematch.body.data.game.status).toBe('pending');
+    expect(rematch.body.data.game._id).not.toBe(id);
+  });
+
+  it('handles draw offers', async () => {
+    const { one, two, twoId } = await setup();
+    const id = (await one.post('/api/v1/chess/invite').send({ userId: twoId, color: 'white' })).body.data.game._id;
+    await two.post(`/api/v1/chess/${id}/accept`);
+
+    expect((await one.post(`/api/v1/chess/${id}/draw`).send({ action: 'offer' })).body.data.game.drawOfferByMe).toBe(true);
+    expect((await two.get(`/api/v1/chess/${id}`)).body.data.game.drawOfferByOpponent).toBe(true);
+
+    // The offerer cannot accept their own offer.
+    expect((await one.post(`/api/v1/chess/${id}/draw`).send({ action: 'accept' })).status).toBe(400);
+
+    const accepted = await two.post(`/api/v1/chess/${id}/draw`).send({ action: 'accept' });
+    expect(accepted.body.data.game).toMatchObject({ status: 'finished', result: 'draw', resultReason: 'agreement' });
+  });
+
+  it("ends on fool's mate with the right winner", async () => {
+    const { one, two, twoId } = await setup();
+    const id = (await one.post('/api/v1/chess/invite').send({ userId: twoId, color: 'white' })).body.data.game._id;
+    await two.post(`/api/v1/chess/${id}/accept`);
+
+    const line = [
+      [one, 'f2', 'f3'],
+      [two, 'e7', 'e5'],
+      [one, 'g2', 'g4'],
+      [two, 'd8', 'h4'],
+    ];
+    let last;
+    for (const [agent, from, to] of line) last = await agent.post(`/api/v1/chess/${id}/move`).send({ from, to });
+
+    expect(last.body.data.game).toMatchObject({ status: 'finished', result: 'b', resultReason: 'checkmate', gameOver: true });
+    expect(last.body.data.game.moves).toEqual(['f3', 'e5', 'g4', 'Qh4#']);
+  });
+});
+

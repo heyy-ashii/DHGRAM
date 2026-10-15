@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { api } from './api'
-import type { AdminThoughtsList, GroupSummary, MessageThread, PeerMessage, PostList, ReportList, Stats, Story, StoryGroup, SupportDirectory, User, UserDirectory } from './types'
+import type { AdminThoughtsList, ChessDirectoryUser, ChessGame, ChessInvite, GroupSummary, MessageThread, PeerMessage, PostList, ReportList, Stats, Story, StoryGroup, SupportDirectory, User, UserDirectory } from './types'
 
 export const useStats = () =>
   useQuery({
@@ -107,3 +107,49 @@ export const useAdminThoughts = ({ q = '', hidden, page = 1, limit = 20 }: { q?:
     queryFn: () => api<AdminThoughtsList>('/admin/posts', { query: { q, hidden, page, limit } }),
     placeholderData: (prev) => prev,
   })
+
+// --- Chess -----------------------------------------------------------------
+
+// The invitable students, filtered to those who actually have an account. The
+// directory returns a flat list, so the picker filters as you type.
+export const useChessDirectory = (q: string, enabled = true) =>
+  useQuery({
+    queryKey: ['chess', 'directory', q],
+    queryFn: async () => {
+      const res = await api<{ data: { users: ChessDirectoryUser[] } }>('/messages/directory', { query: { q, limit: 50 } })
+      return res.data.users.filter((u): u is ChessDirectoryUser => Boolean(u._id))
+    },
+    enabled,
+  })
+
+// The caller's games (invites they sent, live games and finished games).
+export const useChessGames = (enabled = true) =>
+  useQuery({
+    queryKey: ['chess', 'games'],
+    queryFn: () => api<{ data: { games: ChessGame[] } }>('/chess').then((r) => r.data.games),
+    enabled,
+    refetchInterval: 15000,
+  })
+
+// Invitations waiting on the caller, polled so the badge and Messages list stay
+// current without a websocket.
+export const useChessInvites = (enabled = true) =>
+  useQuery({
+    queryKey: ['chess', 'invites'],
+    queryFn: () => api<{ data: { invites: ChessInvite[] } }>('/chess/invites').then((r) => r.data.invites),
+    enabled,
+    refetchInterval: 10000,
+  })
+
+// One game, polled while it is open so the board follows the opponent's moves.
+// No retries: a 404 means the game is gone (declined or removed) and the page
+// should drop the stale link straight away.
+export const useChessGame = (id?: string) =>
+  useQuery({
+    queryKey: ['chess', 'game', id],
+    queryFn: () => api<{ data: { game: ChessGame } }>(`/chess/${id}`).then((r) => r.data.game),
+    enabled: Boolean(id),
+    refetchInterval: 3000,
+    retry: false,
+  })
+

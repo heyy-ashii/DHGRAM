@@ -8,7 +8,7 @@ import { Where, buildLimitOffset, buildOrderBy, buildWhere, isUuid } from './sql
 // (find/findOne/create/save/populate/aggregate) so the models can swap drivers
 // without touching the routes. Queries are compiled to SQL in `sql.js`.
 
-const UUID_COLUMNS = new Set(['id', 'user_id', 'user_a', 'user_b', 'sender_id', 'conversation_id', 'created_by']);
+const UUID_COLUMNS = new Set(['id', 'user_id', 'user_a', 'user_b', 'sender_id', 'conversation_id', 'created_by', 'white_id', 'black_id', 'invited_by', 'draw_offered_by']);
 
 function castValue(column, value) {
   if (value === undefined || value === null) return value;

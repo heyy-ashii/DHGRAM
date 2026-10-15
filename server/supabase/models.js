@@ -247,6 +247,32 @@ const reportSpec = {
   publicJSON: (r) => ({ ...r }),
 };
 
+// One-to-one chess games. `moves` is a text[] of SAN strings; `fen` mirrors the
+// last position so a read needs no replay. Invites are `pending` rows.
+const gameSpec = {
+  name: 'Games',
+  table: 'app_games',
+  columns: {
+    white: 'white_id',
+    black: 'black_id',
+    invitedBy: 'invited_by',
+    status: 'status',
+    result: 'result',
+    resultReason: 'result_reason',
+    moves: 'moves',
+    fen: 'fen',
+    drawOfferedBy: 'draw_offered_by',
+    acceptedAt: 'accepted_at',
+    finishedAt: 'finished_at',
+    lastMoveAt: 'last_move_at',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+  },
+  dates: dateFields(['acceptedAt', 'finishedAt', 'lastMoveAt']),
+  defaults: { status: 'pending', moves: [], result: null, resultReason: null, drawOfferedBy: null },
+  publicJSON: (g) => ({ ...g }),
+};
+
 export const SupabaseUser = createCollection(userSpec);
 export const SupabaseOtp = createCollection(otpSpec);
 export const SupabaseConversation = createCollection(conversationSpec);
@@ -260,6 +286,7 @@ export const SupabaseGroupMessage = createCollection(groupMessageSpec);
 export const SupabaseStory = createCollection(storySpec);
 export const SupabaseStoryView = createCollection(storyViewSpec);
 export const SupabaseReport = createCollection(reportSpec);
+export const SupabaseGame = createCollection(gameSpec);
 
 conversationSpec.populates = { user: SupabaseUser };
 postSpec.populates = { author: SupabaseUser };
@@ -267,5 +294,6 @@ peerConversationSpec.populates = { userA: SupabaseUser, userB: SupabaseUser };
 peerMessageSpec.populates = { sender: SupabaseUser };
 groupMessageSpec.populates = { sender: SupabaseUser };
 storySpec.populates = { author: SupabaseUser };
+gameSpec.populates = { white: SupabaseUser, black: SupabaseUser, invitedBy: SupabaseUser };
 
 export const publicUser = userSpec.publicJSON;

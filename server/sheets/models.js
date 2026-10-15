@@ -108,6 +108,16 @@ const reportSpec = {
   publicJSON: (r) => ({ ...r }),
 };
 
+// One-to-one chess games. `moves` is stored as a JSON column (see Code.gs), so
+// the Sheet holds the SAN list without a per-move tab.
+const gameSpec = {
+  name: 'Games',
+  dates: dateFields(['acceptedAt', 'finishedAt', 'lastMoveAt']),
+  arrays: ['moves'],
+  defaults: { status: 'pending', moves: [], result: null, resultReason: null, drawOfferedBy: null },
+  publicJSON: (g) => ({ ...g }),
+};
+
 export const SheetsUser = createCollection(userSpec);
 export const SheetsOtp = createCollection(otpSpec);
 export const SheetsConversation = createCollection(conversationSpec);
@@ -121,6 +131,7 @@ export const SheetsGroupMessage = createCollection(groupMessageSpec);
 export const SheetsStory = createCollection(storySpec);
 export const SheetsStoryView = createCollection(storyViewSpec);
 export const SheetsReport = createCollection(reportSpec);
+export const SheetsGame = createCollection(gameSpec);
 
 conversationSpec.populates = { user: SheetsUser };
 postSpec.populates = { author: SheetsUser };
@@ -128,6 +139,7 @@ peerConversationSpec.populates = { userA: SheetsUser, userB: SheetsUser };
 peerMessageSpec.populates = { sender: SheetsUser };
 groupMessageSpec.populates = { sender: SheetsUser };
 storySpec.populates = { author: SheetsUser };
+gameSpec.populates = { white: SheetsUser, black: SheetsUser, invitedBy: SheetsUser };
 
 // Shared shape for a user as returned to clients, used for .lean() results.
 export const publicUser = userSpec.publicJSON;

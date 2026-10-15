@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
+import ChessInviteBell from './chess/ChessInviteBell'
 import Footer from './Footer'
 import Navbar from './Navbar'
 import Sidebar from './Sidebar'
@@ -9,6 +10,7 @@ import { Toaster } from './ui'
 const TITLES: Record<string, string> = {
   '/feed': 'Thoughts',
   '/messages': 'Messages',
+  '/chess': 'Chess',
   '/account': 'Account',
   '/about': 'About',
   '/contact': 'Contact',
@@ -54,6 +56,7 @@ export default function PublicLayout() {
         {/* Reserves space above the fixed mobile bottom navigation. */}
         <div className="h-[92px] shrink-0 md:hidden" aria-hidden />
       </div>
+      <ChessInviteBell />
       <Toaster />
     </div>
   )
