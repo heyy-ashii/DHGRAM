@@ -267,4 +267,55 @@ describeIfDb('DHGRAM on Supabase (Postgres)', () => {
     const resigned = await two.post(`/api/v1/chess/${id}/resign`);
     expect(resigned.body.data.game).toMatchObject({ status: 'finished', result: 'w', resultReason: 'resignation' });
   });
+
+  it('degrades gracefully when a feature table is missing (unapplied migration)', async () => {
+    // A deployed database can be missing a whole table (a new feature's migration
+    // was never applied). Dropping app_games reproduces the 500 the login page
+    // showed for the chess page: "Something went wrong. Please try again later."
+    const { User } = await import('../models/User.js');
+    await User.create({ name: 'Drift Board', username: 'driftboard', password: 'driftboard1', status: 'active' });
+    const target = await User.create({ name: 'Drift Target', username: 'drifttarget', password: 'drifttarget1', status: 'active' });
+    const one = request.agent(app);
+    await one.post('/api/v1/auth/login').send({ identifier: 'driftboard', password: 'driftboard1' });
+
+    await db().query('drop table if exists app_games cascade');
+    try {
+      // Reads answer empty rather than 500ing the page.
+      expect((await one.get('/api/v1/chess')).status).toBe(200);
+      expect((await one.get('/api/v1/chess')).body.data.games).toEqual([]);
+      expect((await one.get('/api/v1/chess/invites')).status).toBe(200);
+      expect((await one.get('/api/v1/chess/invites')).body.data.invites).toEqual([]);
+
+      // A write fails with a clear operational message, not an opaque 500.
+      const invite = await one.post('/api/v1/chess/invite').send({ userId: String(target._id), color: 'white' });
+      expect(invite.status).toBe(503);
+      expect(invite.body.message).toMatch(/unavailable/i);
+    } finally {
+      await db().query('drop table if exists app_games cascade');
+      await db().query(`
+        create table app_games (
+          id uuid primary key default gen_random_uuid(),
+          white_id uuid not null references app_users (id) on delete cascade,
+          black_id uuid not null references app_users (id) on delete cascade,
+          invited_by uuid not null references app_users (id) on delete cascade,
+          status text not null default 'pending' check (status in ('pending', 'active', 'finished')),
+          result text check (result in ('w', 'b', 'draw')),
+          result_reason text,
+          moves text[] not null default '{}',
+          fen text not null default 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          draw_offered_by uuid references app_users (id) on delete set null,
+          accepted_at timestamptz,
+          finished_at timestamptz,
+          last_move_at timestamptz not null default now(),
+          created_at timestamptz not null default now(),
+          updated_at timestamptz not null default now()
+        )
+      `);
+    }
+
+    // Once the migration is applied, the same warm process works again: the
+    // schema cache must not have latched onto the empty (missing-table) state.
+    const after = await one.post('/api/v1/chess/invite').send({ userId: String(target._id), color: 'white' });
+    expect(after.status).toBe(201);
+  });
 });
