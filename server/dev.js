@@ -6,6 +6,12 @@ async function start() {
   const active = datastore();
   if (active !== 'mongo') {
     console.info(`[dev] using the ${active} datastore (no MongoDB)`);
+    // Seed before any request runs, so apply the schema first (the app only
+    // migrates lazily on the first /api request).
+    if (active === 'supabase') {
+      const { ensureSchema } = await import('./supabase/migrate.js');
+      await ensureSchema();
+    }
     if (process.env.SEED_DEV === 'true') {
       const { seedDev } = await import('./scripts/dev-seed.js');
       await seedDev();
