@@ -270,9 +270,11 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
   runs against a database that lags the code. Every file is idempotent (`if not
   exists`, `drop trigger if exists`) and additive, so re-running is a no-op;
   `npm run supabase:apply` does the same thing by hand. Set
-  `SUPABASE_AUTO_MIGRATE=false` to disable it (a locked-down database), and note
-  the SQL files are bundled into the serverless function via `vercel.json`
-  `includeFiles`.
+  `SUPABASE_AUTO_MIGRATE=false` to disable it (a locked-down database). The SQL
+  is compiled into `server/supabase/migrations.generated.js` by `npm run build`
+  (`server/scripts/build-migrations.js`), so it travels inside `server/**` in the
+  serverless bundle; when that file is absent (dev/tests) it reads the `.sql`
+  files from `supabase/migrations/` instead.
 - Even so, the ODM degrades rather than 500s on drift: a missing **column**
   (`42703`, e.g. `app_users.reg_no` before `0007_user_reg_no.sql`) is dropped
   from writes, so login falls back to username-only. A missing **table** (`42P01`,

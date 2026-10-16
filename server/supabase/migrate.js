@@ -1,4 +1,4 @@
-import { access, readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from '../config.js';
@@ -13,25 +13,10 @@ import { getPool } from './db.js';
 // many concurrent requests a serverless cold start handles apply it once. A
 // failure is not fatal: the ODM degrades (reads empty, writes 503) and the next
 // request retries, so a transient database blip does not wedge the process.
-
-// The migrations live beside the source in dev, but a serverless bundle may be
-// flattened, so fall back to the deploy root (Vercel runs from /var/task).
-const CANDIDATE_DIRS = [
-  join(dirname(fileURLToPath(import.meta.url)), '../../supabase/migrations'),
-  join(process.cwd(), 'supabase/migrations'),
-];
-
-async function migrationsDir() {
-  for (const dir of CANDIDATE_DIRS) {
-    try {
-      await access(dir);
-      return dir;
-    } catch {
-      // try the next candidate
-    }
-  }
-  return CANDIDATE_DIRS[0];
-}
+//
+// `npm run build` compiles the SQL into migrations.generated.js, which is part
+// of server/** and therefore always bundled. Reading the .sql files from disk is
+// the dev/test path (and a fallback if the generated file is absent).
 
 // Arbitrary but fixed key so every process and `npm run supabase:apply` agree.
 const MIGRATION_LOCK_KEY = 786341;
@@ -39,9 +24,33 @@ const MIGRATION_LOCK_KEY = 786341;
 let done = false;
 let inFlight = null;
 
+async function loadMigrations() {
+  try {
+    const { MIGRATIONS } = await import('./migrations.generated.js');
+    if (MIGRATIONS?.length) return MIGRATIONS;
+  } catch {
+    // no generated file (dev/test): read the .sql files directly
+  }
+  const dirs = [
+    join(dirname(fileURLToPath(import.meta.url)), '../../supabase/migrations'),
+    join(process.cwd(), 'supabase/migrations'),
+  ];
+  for (const dir of dirs) {
+    try {
+      const files = (await readdir(dir)).filter((f) => f.endsWith('.sql')).sort();
+      if (!files.length) continue;
+      return Promise.all(
+        files.map(async (name) => ({ name, sql: await readFile(join(dir, name), 'utf8') })),
+      );
+    } catch {
+      // try the next candidate directory
+    }
+  }
+  throw new Error('No migrations found (supabase/migrations)');
+}
+
 async function runMigrations() {
-  const dir = await migrationsDir();
-  const files = (await readdir(dir)).filter((f) => f.endsWith('.sql')).sort();
+  const migrations = await loadMigrations();
   const client = await getPool().connect();
   try {
     // A transaction-scoped advisory lock (auto-released at commit) is safe behind
@@ -50,8 +59,8 @@ async function runMigrations() {
     // idempotent files as fast no-ops.
     await client.query('begin');
     await client.query('select pg_advisory_xact_lock($1)', [MIGRATION_LOCK_KEY]);
-    for (const file of files) {
-      await client.query(await readFile(join(dir, file), 'utf8'));
+    for (const { sql } of migrations) {
+      await client.query(sql);
     }
     await client.query('commit');
   } catch (err) {
@@ -60,7 +69,7 @@ async function runMigrations() {
   } finally {
     client.release();
   }
-  console.info(`[supabase] applied ${files.length} migrations`);
+  console.info(`[supabase] applied ${migrations.length} migrations`);
 }
 
 // Apply the schema at most once per process. Concurrent callers share the first

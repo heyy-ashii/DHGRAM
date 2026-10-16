@@ -29,3 +29,6 @@ dist-ssr
 
 # Local Figma design handoff assets and extraction scratch space
 .figma/
+
+# Generated at build time from supabase/migrations/*.sql
+server/supabase/migrations.generated.js
