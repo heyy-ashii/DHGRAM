@@ -2,17 +2,7 @@ import { Chess, type Square } from 'chess.js'
 import { useMemo, useState } from 'react'
 import type { ChessColor } from '../../lib/types'
 import { cn } from '../../lib/utils'
-
-// Unicode glyphs for the board. Using text rather than an image set keeps the
-// bundle small and lets the pieces inherit the warm palette.
-const GLYPHS: Record<string, string> = {
-  p: '♟',
-  n: '♞',
-  b: '♝',
-  r: '♜',
-  q: '♛',
-  k: '♚',
-}
+import ChessPiece from './ChessPiece'
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 const RANKS = ['8', '7', '6', '5', '4', '3', '2', '1']
@@ -123,25 +113,16 @@ export default function ChessBoard({
                 aria-label={`${square}${piece ? ` ${piece.color === 'w' ? 'white' : 'black'} ${piece.type}` : ''}`}
                 className={cn(
                   'relative grid place-items-center transition-colors',
-                  light ? 'bg-[#efe4cd]' : 'bg-[#c9a97e]',
+                  light ? 'bg-[#efe2c8]' : 'bg-[#caa877]',
                   myTurn && 'cursor-pointer',
-                  isLast && 'after:absolute after:inset-0 after:bg-amber-400/35',
-                  isSelected && 'after:absolute after:inset-0 after:bg-brand/40',
+                  isLast && 'after:absolute after:inset-0 after:bg-amber-400/30',
+                  isSelected && 'after:absolute after:inset-0 after:bg-brand/35',
                 )}
               >
                 {/* File/rank labels sit on the outer edge only. */}
-                {fi === 0 && <span className={cn('absolute left-[2%] top-[2%] text-[1.7cqw] font-semibold leading-none', light ? 'text-[#a5825a]' : 'text-[#efe4cd]')}>{rank}</span>}
-                {ri === 7 && <span className={cn('absolute bottom-[2%] right-[2%] text-[1.7cqw] font-semibold leading-none', light ? 'text-[#a5825a]' : 'text-[#efe4cd]')}>{file}</span>}
-                {piece && (
-                  <span
-                    className={cn(
-                      'relative z-10 select-none text-[7cqw] leading-none',
-                      piece.color === 'w' ? 'text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.65)]' : 'text-ink-900 drop-shadow-[0_1px_0_rgba(255,255,255,0.35)]',
-                    )}
-                  >
-                    {GLYPHS[piece.type]}
-                  </span>
-                )}
+                {fi === 0 && <span className={cn('absolute left-[4%] top-[3%] text-[1.7cqw] font-semibold leading-none', light ? 'text-[#a5825a]' : 'text-[#f3e8d2]')}>{rank}</span>}
+                {ri === 7 && <span className={cn('absolute bottom-[3%] right-[4%] text-[1.7cqw] font-semibold leading-none', light ? 'text-[#a5825a]' : 'text-[#f3e8d2]')}>{file}</span>}
+                {piece && <ChessPiece type={piece.type} color={piece.color} className="relative z-10 h-[82%] w-[82%]" />}
                 {isTarget && !isCapture && <span className="absolute z-20 size-[26%] rounded-full bg-ink-900/25" />}
                 {isTarget && isCapture && <span className="absolute inset-[8%] z-20 rounded-full ring-4 ring-ink-900/30" />}
               </button>
@@ -158,7 +139,7 @@ export default function ChessBoard({
               {(['q', 'r', 'b', 'n'] as Promotion[]).map((p) => (
                 <button
                   key={p}
-                  className="grid size-12 place-items-center rounded-xl bg-ink-100 text-3xl hover:bg-brand-soft dark:bg-ink-800 dark:hover:bg-brand/20"
+                  className="grid size-12 place-items-center rounded-xl bg-ink-100 p-2 hover:bg-brand-soft dark:bg-ink-800 dark:hover:bg-brand/20"
                   onClick={() => {
                     onMove(pendingPromotion.from, pendingPromotion.to, p)
                     setPromotion(null)
@@ -166,7 +147,7 @@ export default function ChessBoard({
                   }}
                   aria-label={`Promote to ${p}`}
                 >
-                  {GLYPHS[p]}
+                  <ChessPiece type={p} color={myColor} className="h-full w-full" />
                 </button>
               ))}
             </div>
