@@ -7,7 +7,7 @@
     "dev": "concurrently -n api,web -c blue,green \"npm:dev:api\" \"npm:dev:web\"",
     "dev:web": "vite",
     "dev:api": "nodemon --watch server --watch api server/dev.js",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && node server/scripts/build-migrations.js && vite build",
     "preview": "vite preview",
     "lint": "oxlint",
     "typecheck": "tsc -b",

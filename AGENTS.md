@@ -263,19 +263,23 @@ nothing; the backend connects directly as Postgres, which bypasses RLS.
   TLS aborts (`ssl3_read_bytes:tlsv1 alert internal error`) because the Atlas IP
   allow-list rejects the sandbox egress IP. Add the IP (or `0.0.0.0/0`) in Atlas ▸
   Network Access, or run against the Supabase/Sheets datastore instead.
-- Supabase migrations are applied **out of band** (`npm run supabase:apply`), so a
-  deployed database can lag the code. A column the code expects but the table does
-  not have makes Postgres reject the whole statement (`column "reg_no" does not
-  exist`, code `42703`), which surfaced as a 500 on **every** non-email login when
-  `0007_user_reg_no.sql` had not been applied. The Supabase ODM now caches each
-  table's real columns and drops unknown ones from writes, so login degrades to
-  username-only instead of failing. Still apply the migration for registration-
-  number login to work.
-- A missing **table** (a feature's migration never applied, e.g. `app_games` when
-  `0008_chess.sql` is not run) is Postgres `42P01` (`relation "app_games" does not
-  exist`). The ODM treats it as an empty table on reads and answers a write with a
-  503 (`That feature is temporarily unavailable…`) instead of an opaque 500 — this
-  was the "Something went wrong" the chess page showed. The empty-column set is
-  deliberately **not** cached, so once the migration runs the same warm process
-  writes normally again. The message checks are anchored (`^relation`) because a
-  missing column's message also contains "relation".
+- Supabase migrations run **automatically on the first API request**
+  (`server/supabase/migrate.js`, wired into the `/api` middleware in `app.js`):
+  every `supabase/migrations/*.sql` is applied in name order inside a
+  transaction-scoped advisory lock, once per process. This is why a deploy never
+  runs against a database that lags the code. Every file is idempotent (`if not
+  exists`, `drop trigger if exists`) and additive, so re-running is a no-op;
+  `npm run supabase:apply` does the same thing by hand. Set
+  `SUPABASE_AUTO_MIGRATE=false` to disable it (a locked-down database). The SQL
+  is compiled into `server/supabase/migrations.generated.js` by `npm run build`
+  (`server/scripts/build-migrations.js`), so it travels inside `server/**` in the
+  serverless bundle; when that file is absent (dev/tests) it reads the `.sql`
+  files from `supabase/migrations/` instead.
+- Even so, the ODM degrades rather than 500s on drift: a missing **column**
+  (`42703`, e.g. `app_users.reg_no` before `0007_user_reg_no.sql`) is dropped
+  from writes, so login falls back to username-only. A missing **table** (`42P01`,
+  e.g. `app_games` before `0008_chess.sql`) reads as empty and a write answers a
+  503 — this was the "Something went wrong" the chess page showed. The empty
+  column set is deliberately **not** cached, so once the migration runs the same
+  warm process writes normally again; the message checks are anchored
+  (`^relation`) because a missing column's message also contains "relation".
