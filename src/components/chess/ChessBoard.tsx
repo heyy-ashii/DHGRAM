@@ -116,15 +116,15 @@ export default function ChessBoard({
                 aria-label={`${square}${piece ? ` ${piece.color === 'w' ? 'white' : 'black'} ${piece.type}` : ''}`}
                 className={cn(
                   'relative grid place-items-center transition-colors',
-                  light ? 'bg-[#efe2c8]' : 'bg-[#caa877]',
+                  light ? 'bg-[#ADBD8F]' : 'bg-[#6F8F72]',
                   myTurn && 'cursor-pointer',
                   isLast && 'after:absolute after:inset-0 after:bg-amber-400/30',
                   isSelected && 'after:absolute after:inset-0 after:bg-brand/35',
                 )}
               >
                 {/* File/rank labels sit on the outer edge only. */}
-                {fi === 0 && <span className={cn('absolute left-[4%] top-[3%] text-[1.7cqw] font-semibold leading-none', light ? 'text-[#a5825a]' : 'text-[#f3e8d2]')}>{rank}</span>}
-                {ri === 7 && <span className={cn('absolute bottom-[3%] right-[4%] text-[1.7cqw] font-semibold leading-none', light ? 'text-[#a5825a]' : 'text-[#f3e8d2]')}>{file}</span>}
+                {fi === 0 && <span className={cn('absolute left-[4%] top-[3%] text-[1.7cqw] font-semibold leading-none', light ? 'text-[#4f6b52]' : 'text-[#e4ead6]')}>{rank}</span>}
+                {ri === 7 && <span className={cn('absolute bottom-[3%] right-[4%] text-[1.7cqw] font-semibold leading-none', light ? 'text-[#4f6b52]' : 'text-[#e4ead6]')}>{file}</span>}
                 {piece && <ChessPiece type={piece.type} color={piece.color} className="relative z-10 h-[82%] w-[82%]" />}
                 {isTarget && !isCapture && <span className="absolute z-20 size-[26%] rounded-full bg-ink-900/25" />}
                 {isTarget && isCapture && <span className="absolute inset-[8%] z-20 rounded-full ring-4 ring-ink-900/30" />}
