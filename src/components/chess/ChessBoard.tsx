@@ -94,8 +94,11 @@ export default function ChessBoard({
     <div className="relative w-full">
       {/* `@container` makes the board the sizing context, so pieces and markers
           sized in `cqw` always track the squares — whether the board is
-          squeezed by the sidebar or blown up in fullscreen. */}
-      <div className="@container grid aspect-square w-full grid-cols-8 overflow-hidden rounded-[16px] shadow-lift ring-1 ring-ink-300 dark:ring-ink-700">
+          squeezed by the sidebar or blown up in fullscreen. The explicit
+          `grid-template-rows` (matching `grid-cols-8`) keeps every row exactly
+          one eighth of the board, so a square is the same size whether or not a
+          piece sits on it. */}
+      <div className="@container grid aspect-square w-full grid-cols-8 [grid-template-rows:repeat(8,minmax(0,1fr))] overflow-hidden rounded-[16px] shadow-lift ring-1 ring-ink-300 dark:ring-ink-700">
         {rankOrder.map((rank, ri) =>
           fileOrder.map((file, fi) => {
             const square = `${file}${rank}` as Square
