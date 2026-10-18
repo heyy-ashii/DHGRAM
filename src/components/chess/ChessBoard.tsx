@@ -102,7 +102,10 @@ export default function ChessBoard({
 
   return (
     <div className="relative w-full">
-      <div className="grid aspect-square w-full grid-cols-8 overflow-hidden rounded-[16px] shadow-lift ring-1 ring-ink-300 dark:ring-ink-700">
+      {/* `@container` makes the board the sizing context, so pieces and markers
+          sized in `cqw` always track the squares — whether the board is
+          squeezed by the sidebar or blown up in fullscreen. */}
+      <div className="@container grid aspect-square w-full grid-cols-8 overflow-hidden rounded-[16px] shadow-lift ring-1 ring-ink-300 dark:ring-ink-700">
         {rankOrder.map((rank, ri) =>
           fileOrder.map((file, fi) => {
             const square = `${file}${rank}` as Square
@@ -127,12 +130,12 @@ export default function ChessBoard({
                 )}
               >
                 {/* File/rank labels sit on the outer edge only. */}
-                {fi === 0 && <span className={cn('absolute left-0.5 top-0.5 text-[9px] font-semibold sm:text-[11px]', light ? 'text-[#a5825a]' : 'text-[#efe4cd]')}>{rank}</span>}
-                {ri === 7 && <span className={cn('absolute bottom-0.5 right-0.5 text-[9px] font-semibold sm:text-[11px]', light ? 'text-[#a5825a]' : 'text-[#efe4cd]')}>{file}</span>}
+                {fi === 0 && <span className={cn('absolute left-[2%] top-[2%] text-[1.7cqw] font-semibold leading-none', light ? 'text-[#a5825a]' : 'text-[#efe4cd]')}>{rank}</span>}
+                {ri === 7 && <span className={cn('absolute bottom-[2%] right-[2%] text-[1.7cqw] font-semibold leading-none', light ? 'text-[#a5825a]' : 'text-[#efe4cd]')}>{file}</span>}
                 {piece && (
                   <span
                     className={cn(
-                      'relative z-10 select-none text-[7vw] leading-none sm:text-[40px]',
+                      'relative z-10 select-none text-[7cqw] leading-none',
                       piece.color === 'w' ? 'text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.65)]' : 'text-ink-900 drop-shadow-[0_1px_0_rgba(255,255,255,0.35)]',
                     )}
                   >

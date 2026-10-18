@@ -1,7 +1,7 @@
 import { Chess } from 'chess.js'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Check, Crown, Flag, Handshake, Plus, Repeat, Search, Swords, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { ArrowLeft, Check, Crown, Flag, Handshake, Maximize2, Minimize2, Plus, Repeat, Search, Swords, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Avatar from '../components/Avatar'
 import ChessBoard from '../components/chess/ChessBoard'
@@ -164,6 +164,35 @@ function GamePanel({ game, onBack }: { game: ChessGame; onBack: () => void }) {
   const { toast } = useUi()
   const invalidate = () => qc.invalidateQueries({ queryKey: ['chess'] })
 
+  // Fullscreen: the whole board-and-controls panel expands over the app. It is
+  // entered automatically when a pending game becomes active (accepting an
+  // invite, or an invite we sent being accepted), and can be toggled by hand.
+  const [fullscreen, setFullscreen] = useState(false)
+  const prevStatus = useRef(game.status)
+
+  // A finished game never stays fullscreen, so derive it rather than reset it.
+  const isFullscreen = fullscreen && game.status !== 'finished'
+
+  useEffect(() => {
+    if (prevStatus.current === 'pending' && game.status === 'active') setFullscreen(true)
+    prevStatus.current = game.status
+  }, [game.status])
+
+  // Esc leaves fullscreen, and while it is open the page behind cannot scroll.
+  useEffect(() => {
+    if (!isFullscreen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFullscreen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+    }
+  }, [isFullscreen])
+
   const move = useMutation({
     mutationFn: ({ from, to, promotion }: { from: string; to: string; promotion?: string }) =>
       api(`/chess/${game._id}/move`, { method: 'POST', body: { from, to, promotion } }),
@@ -214,7 +243,12 @@ function GamePanel({ game, onBack }: { game: ChessGame; onBack: () => void }) {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto">
+    <div
+      className={cn(
+        'flex h-full min-h-0 flex-col overflow-y-auto',
+        isFullscreen && 'fixed inset-0 z-50 h-auto bg-ink-50 dark:bg-ink-950',
+      )}
+    >
       <header className="flex items-center gap-3 border-b border-ink-200 bg-white px-5 py-4 dark:border-ink-800 dark:bg-ink-900">
         <button className="grid size-9 place-items-center rounded-[10px] text-ink-500 hover:bg-ink-100 md:hidden dark:hover:bg-ink-800" onClick={onBack} aria-label="Back to games">
           <ArrowLeft className="size-5" />
@@ -224,10 +258,18 @@ function GamePanel({ game, onBack }: { game: ChessGame; onBack: () => void }) {
           <p className="truncate font-semibold">{game.opponent.name || 'Student'}</p>
           <p className="truncate text-xs text-ink-500">You play {COLOR_LABEL[game.myColor]}</p>
         </div>
+        <button
+          className="grid size-9 place-items-center rounded-[10px] text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800"
+          onClick={() => setFullscreen((v) => !v)}
+          aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+        >
+          {isFullscreen ? <Minimize2 className="size-5" /> : <Maximize2 className="size-5" />}
+        </button>
       </header>
 
       <div className="flex flex-1 flex-col items-center gap-5 p-5">
-        <div className="w-full max-w-[520px]">
+        <div className={cn('w-full', isFullscreen ? 'max-w-[min(94vw,calc(100dvh-15rem))]' : 'max-w-[520px]')}>
           {/* The opponent sits at the top of the board, the caller at the bottom. */}
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
